@@ -1,0 +1,105 @@
+#!/bin/bash
+set -e
+
+# -----------------------------------------------------------------------------
+# trap on exit
+# -----------------------------------------------------------------------------
+function on_exit {
+    if [[ "$COMPLETED" != true ]]; then
+        echo -e "\nSomething went wrong. Not completed!"
+        exit 1
+    else
+        echo -e "\nCompleted successfully!"
+        exit 0
+    fi
+}
+
+COMPLETED=false
+trap on_exit EXIT
+
+# -----------------------------------------------------------------------------
+# ENVIRONMENT
+# -----------------------------------------------------------------------------
+echo
+echo "------------------------ ENVIRONMENT -------------------------"
+
+TAG=5142
+BASEDIR=$(pwd)
+
+# -----------------------------------------------------------------------------
+# check
+# -----------------------------------------------------------------------------
+echo
+echo "--------------------------- CHECK ----------------------------"
+
+if [[ "$(whoami)" != "root" ]]; then
+    echo "run as root"
+fi
+
+# -----------------------------------------------------------------------------
+# packages
+# -----------------------------------------------------------------------------
+echo
+echo "-------------------------- PACKAGES --------------------------"
+
+apt-get -y --allow-releaseinfo-change update
+apt-get -y install curl wget
+
+curl -s https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add -
+echo "deb https://deb.nodesource.com/node_14.x buster main" > \
+    /etc/apt/sources.list.d/nodesource.list
+
+apt-get -y --allow-releaseinfo-change update
+apt-get -y install gnupg git build-essential
+apt-get -y install maven nodejs
+
+mvn --version
+node --version
+npm --version
+
+# -----------------------------------------------------------------------------
+# repo
+# -----------------------------------------------------------------------------
+echo
+echo "---------------------------- REPO ----------------------------"
+
+mkdir -p dev
+
+# jicofo
+if [[ ! -d "dev/jicofo" ]]; then
+    git clone -b master https://github.com/jitsi/jicofo.git dev/jicofo
+fi
+
+cd dev/jicofo
+git checkout master
+git pull
+git branch -D $TAG || true
+git checkout jitsi-meet_$TAG
+git checkout -b branch
+
+# lib-jitsi-meet
+cd $BASEDIR
+if [[ ! -d "dev/lib-jitsi-meet" ]]; then
+    git clone -b master https://github.com/jitsi/lib-jitsi-meet.git \
+        dev/lib-jitsi-meet
+fi
+
+cd dev/lib-jitsi-meet
+git checkout master
+git pull
+git branch -D $TAG || true
+git checkout jitsi-meet_$TAG
+git checkout -b branch
+
+# jitsi-meet
+cd $BASEDIR
+if [[ ! -d "dev/jitsi-meet" ]]; then
+    git clone -b master https://github.com/jitsi/jitsi-meet.git dev/jitsi-meet
+fi
+
+cd dev/jitsi-meet
+git checkout master
+git pull
+git branch -D $TAG || true
+git checkout jitsi-meet_$TAG
+git checkout -b branch
