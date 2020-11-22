@@ -80,7 +80,7 @@ if [[ ! -d "dev/jicofo" ]]; then
 fi
 
 cd dev/jicofo
-git checkout master
+git checkout master -f
 git -c user.name=jitsi-dev -c user.email=jitsi-dev@jitsi.loc stash push --all
 git pull
 git branch -D $TAG || true
@@ -98,7 +98,7 @@ if [[ ! -d "dev/lib-jitsi-meet" ]]; then
 fi
 
 cd dev/lib-jitsi-meet
-git checkout master
+git checkout master -f
 git -c user.name=jitsi-dev -c user.email=jitsi-dev@jitsi.loc stash push --all
 git pull
 git branch -D $TAG || true
@@ -115,7 +115,7 @@ if [[ ! -d "dev/jitsi-meet" ]]; then
 fi
 
 cd dev/jitsi-meet
-git checkout master
+git checkout master -f
 git -c user.name=jitsi-dev -c user.email=jitsi-dev@jitsi.loc stash push --all
 git pull
 git branch -D $TAG || true
