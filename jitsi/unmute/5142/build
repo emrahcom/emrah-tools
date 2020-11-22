@@ -43,14 +43,14 @@ echo
 echo "-------------------------- PACKAGES --------------------------"
 
 apt-get -y --allow-releaseinfo-change update
-apt-get -y install curl wget
+apt-get -y install curl wget gnupg
 
 curl -s https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add -
 echo "deb https://deb.nodesource.com/node_14.x buster main" > \
     /etc/apt/sources.list.d/nodesource.list
 
 apt-get -y --allow-releaseinfo-change update
-apt-get -y install gnupg git build-essential
+apt-get -y install git build-essential
 apt-get -y install maven nodejs
 
 mvn --version
