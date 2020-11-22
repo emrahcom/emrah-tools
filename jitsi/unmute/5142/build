@@ -65,7 +65,10 @@ echo "---------------------------- REPO ----------------------------"
 
 mkdir -p dev
 
+
 # jicofo
+echo -e "\n>>> jicofo\n"
+
 if [[ ! -d "dev/jicofo" ]]; then
     git clone -b master https://github.com/jitsi/jicofo.git dev/jicofo
 fi
@@ -77,7 +80,10 @@ git branch -D $TAG || true
 git checkout jitsi-meet_$TAG
 git checkout -b $TAG
 
+
 # lib-jitsi-meet
+echo -e "\n>>> lib-jitsi-meet\n"
+
 cd $BASEDIR
 if [[ ! -d "dev/lib-jitsi-meet" ]]; then
     git clone -b master https://github.com/jitsi/lib-jitsi-meet.git \
@@ -91,7 +97,10 @@ git branch -D $TAG || true
 git checkout jitsi-meet_$TAG
 git checkout -b $TAG
 
+
 # jitsi-meet
+echo -e "\n>>> jitsi-meet\n"
+
 cd $BASEDIR
 if [[ ! -d "dev/jitsi-meet" ]]; then
     git clone -b master https://github.com/jitsi/jitsi-meet.git dev/jitsi-meet
