@@ -75,7 +75,7 @@ git checkout master
 git pull
 git branch -D $TAG || true
 git checkout jitsi-meet_$TAG
-git checkout -b branch
+git checkout -b $TAG
 
 # lib-jitsi-meet
 cd $BASEDIR
@@ -89,7 +89,7 @@ git checkout master
 git pull
 git branch -D $TAG || true
 git checkout jitsi-meet_$TAG
-git checkout -b branch
+git checkout -b $TAG
 
 # jitsi-meet
 cd $BASEDIR
@@ -102,4 +102,12 @@ git checkout master
 git pull
 git branch -D $TAG || true
 git checkout jitsi-meet_$TAG
-git checkout -b branch
+git checkout -b $TAG
+
+# -----------------------------------------------------------------------------
+# jicofo
+# -----------------------------------------------------------------------------
+echo
+echo "--------------------------- JICOFO ---------------------------"
+
+cd $BASEDIR/dev/jicofo
