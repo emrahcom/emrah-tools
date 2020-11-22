@@ -131,7 +131,7 @@ echo "--------------------------- JICOFO ---------------------------"
 
 cd $BASEDIR/dev/jicofo
 wget -O src/main/java/org/jitsi/jicofo/JitsiMeetConferenceImpl.java \
-    $GITDIR/src/main/java/org/jitsi/jicofo/JitsiMeetConferenceImpl.java
+    $GITDIR/jicofo/src/main/java/org/jitsi/jicofo/JitsiMeetConferenceImpl.java
 
 mvn package -DskipTests -Dassembly.skipAssembly=false
 mvn install
