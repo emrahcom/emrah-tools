@@ -26,6 +26,7 @@ echo
 echo "------------------------ ENVIRONMENT -------------------------"
 
 TAG=5142
+GITDIR="https://raw.githubusercontent.com/emrahcom/emrah-tools/main/jitsi/unmute/$TAG"
 BASEDIR=$(pwd)
 
 
@@ -129,6 +130,11 @@ echo
 echo "--------------------------- JICOFO ---------------------------"
 
 cd $BASEDIR/dev/jicofo
+wget -O src/main/java/org/jitsi/jicofo/JitsiMeetConferenceImpl.java \
+    $GITDIR/src/main/java/org/jitsi/jicofo/JitsiMeetConferenceImpl.java
+
+mvn package -DskipTests -Dassembly.skipAssembly=false
+mvn install
 
 
 # -----------------------------------------------------------------------------
