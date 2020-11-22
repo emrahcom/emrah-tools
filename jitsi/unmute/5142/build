@@ -75,6 +75,7 @@ fi
 
 cd dev/jicofo
 git checkout master
+git -c user.name=jitsi-dev -c user.email=jitsi-dev@jitsi.loc stash push --all
 git pull
 git branch -D $TAG || true
 git checkout jitsi-meet_$TAG
@@ -92,6 +93,7 @@ fi
 
 cd dev/lib-jitsi-meet
 git checkout master
+git -c user.name=jitsi-dev -c user.email=jitsi-dev@jitsi.loc stash push --all
 git pull
 git branch -D $TAG || true
 git checkout jitsi-meet_$TAG
@@ -108,6 +110,7 @@ fi
 
 cd dev/jitsi-meet
 git checkout master
+git -c user.name=jitsi-dev -c user.email=jitsi-dev@jitsi.loc stash push --all
 git pull
 git branch -D $TAG || true
 git checkout jitsi-meet_$TAG
