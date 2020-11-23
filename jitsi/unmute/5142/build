@@ -146,15 +146,14 @@ echo "----------------------- LIB-JITSI-MEET -----------------------"
 cd $BASEDIR/dev/lib-jitsi-meet
 npm update
 
-wget -O lib-jitsi-meet/JitsiConference.js \
-    $GITDIR/lib-jitsi-meet/JitsiConference.js
-wget -O lib-jitsi-meet/JitsiConferenceEventManager.js \
+wget -O JitsiConference.js $GITDIR/lib-jitsi-meet/JitsiConference.js
+wget -O JitsiConferenceEventManager.js \
     $GITDIR/lib-jitsi-meet/JitsiConferenceEventManager.js
-wget -O lib-jitsi-meet/modules/xmpp/ChatRoom.js \
+wget -O modules/xmpp/ChatRoom.js \
     $GITDIR/lib-jitsi-meet/modules/xmpp/ChatRoom.js
-wget -O lib-jitsi-meet/service/xmpp/XMPPEvents.js \
+wget -O service/xmpp/XMPPEvents.js \
     $GITDIR/lib-jitsi-meet/service/xmpp/XMPPEvents.js
-wget -O lib-jitsi-meet/service/statistics/AnalyticsEvents.js \
+wget -O service/statistics/AnalyticsEvents.js \
     $GITDIR/lib-jitsi-meet/service/statistics/AnalyticsEvents.js
 
 
