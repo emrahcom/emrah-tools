@@ -18,7 +18,8 @@ import {
     createConnectionStageReachedEvent,
     createFocusLeftEvent,
     createJingleEvent,
-    createRemotelyMutedEvent
+    createRemotelyMutedEvent,
+    createRemotelyUnmutedEvent
 } from './service/statistics/AnalyticsEvents';
 import XMPPEvents from './service/xmpp/XMPPEvents';
 
@@ -107,6 +108,30 @@ JitsiConferenceEventManager.prototype.setupChatRoomListeners = function() {
                         conference.mutedByFocusActor = null;
                         logger.warn(
                             'Error while audio muting due to focus request', error);
+                    });
+        }
+    );
+
+    chatRoom.addListener(XMPPEvents.AUDIO_UNMUTED_BY_FOCUS,
+        actor => {
+            // TODO: Add a way to differentiate between commands which caused
+            // us to unmute and those that did not change our state (i.e. we were
+            // already unmuted).
+            Statistics.sendAnalytics(createRemotelyUnmutedEvent());
+
+            conference.mutedByFocusActor = actor;
+
+            // set isMutedByFocus when setAudioMute Promise ends
+            conference.rtc.setAudioMute(false).then(
+                () => {
+                    conference.isMutedByFocus = true;
+                    conference.mutedByFocusActor = null;
+                })
+                .catch(
+                    error => {
+                        conference.mutedByFocusActor = null;
+                        logger.warn(
+                            'Error while audio unmuting due to focus request', error);
                     });
         }
     );
