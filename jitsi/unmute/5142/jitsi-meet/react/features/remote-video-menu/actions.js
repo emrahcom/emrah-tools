@@ -12,7 +12,8 @@ import { hideDialog } from '../base/dialog';
 import { setAudioMuted } from '../base/media';
 import {
     getLocalParticipant,
-    muteRemoteParticipant
+    muteRemoteParticipant,
+    unmuteRemoteParticipant
 } from '../base/participants';
 
 import { RemoteVideoMenu } from './components';
@@ -56,6 +57,19 @@ export function muteRemote(participantId: string) {
     return (dispatch: Dispatch<any>) => {
         sendAnalytics(createRemoteMuteConfirmedEvent(participantId));
         dispatch(muteRemoteParticipant(participantId));
+    };
+}
+
+/**
+ * Unmutes the remote participant with the given ID.
+ *
+ * @param {string} participantId - ID of the participant to unmute.
+ * @returns {Function}
+ */
+export function unmuteRemote(participantId: string) {
+    return (dispatch: Dispatch<any>) => {
+        sendAnalytics(createRemoteMuteConfirmedEvent(participantId));
+        dispatch(unmuteRemoteParticipant(participantId));
     };
 }
 

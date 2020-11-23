@@ -8,6 +8,7 @@ import {
     GRANT_MODERATOR,
     KICK_PARTICIPANT,
     MUTE_REMOTE_PARTICIPANT,
+    UNMUTE_REMOTE_PARTICIPANT,
     PARTICIPANT_ID_CHANGED,
     PARTICIPANT_JOINED,
     PARTICIPANT_KICKED,
@@ -197,6 +198,22 @@ export function localParticipantRoleChanged(role) {
 export function muteRemoteParticipant(id) {
     return {
         type: MUTE_REMOTE_PARTICIPANT,
+        id
+    };
+}
+
+/**
+ * Create an action for unmuting another participant in the conference.
+ *
+ * @param {string} id - Participant's ID.
+ * @returns {{
+ *     type: UNMUTE_REMOTE_PARTICIPANT,
+ *     id: string
+ * }}
+ */
+export function unmuteRemoteParticipant(id) {
+    return {
+        type: UNMUTE_REMOTE_PARTICIPANT,
         id
     };
 }
