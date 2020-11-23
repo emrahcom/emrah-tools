@@ -428,6 +428,16 @@ export const createRemotelyMutedEvent = function() {
 };
 
 /**
+ * Indicates that we received a remote command to unmute.
+ */
+export const createRemotelyUnmutedEvent = function() {
+    return {
+        type: TYPE_OPERATIONAL,
+        action: 'remotely.unmuted'
+    };
+};
+
+/**
  * Creates an event which contains RTP statistics such as RTT and packet loss.
  *
  * All average RTP stats are currently reported under 1 event name, but with
