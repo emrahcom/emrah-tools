@@ -187,6 +187,7 @@ wget -O react/features/remote-video-menu/components/web/RemoteVideoMenuTriggerBu
     $GITDIR/jitsi-meet/react/features/remote-video-menu/components/web/RemoteVideoMenuTriggerButton.js
 wget -O react/features/remote-video-menu/components/web/index.js \
     $GITDIR/jitsi-meet/react/features/remote-video-menu/components/web/index.js
+wget -O lang/main.json $GITDIR/jitsi-meet/lang/main.json
 
 make
 
