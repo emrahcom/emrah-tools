@@ -158,6 +158,40 @@ wget -O service/statistics/AnalyticsEvents.js \
 
 
 # -----------------------------------------------------------------------------
+# jitsi-meet
+# -----------------------------------------------------------------------------
+echo
+echo "------------------------- JITSI-MEET -------------------------"
+
+cd $BASEDIR/dev/jitsi-meet
+npm install ../lib-jitsi-meet
+npm update
+
+wget -O react/features/base/participants/actionTypes.js \
+    $GITDIR/jitsi-meet/react/features/base/participants/actionTypes.js
+wget -O react/features/base/participants/actions.js \
+    $GITDIR/jitsi-meet/react/features/base/participants/actions.js
+wget -O react/features/base/participants/middleware.js \
+    $GITDIR/jitsi-meet/react/features/base/participants/middleware.js
+wget -O react/features/remote-video-menu/actions.js \
+    $GITDIR/jitsi-meet/react/features/remote-video-menu/actions.js
+wget -O react/features/remote-video-menu/components/AbstractUnmuteButton.js \
+    $GITDIR/jitsi-meet/react/features/remote-video-menu/components/AbstractUnmuteButton.js
+wget -O react/features/remote-video-menu/components/AbstractUnmuteRemoteParticipantDialog.js \
+    $GITDIR/jitsi-meet/react/features/remote-video-menu/components/AbstractUnmuteRemoteParticipantDialog.js
+wget -O react/features/remote-video-menu/components/web/UnmuteButton.js \
+    $GITDIR/jitsi-meet/react/features/remote-video-menu/components/web/UnmuteButton.js
+wget -O react/features/remote-video-menu/components/web/UnmuteRemoteParticipantDialog.js \
+    $GITDIR/jitsi-meet/react/features/remote-video-menu/components/web/UnmuteRemoteParticipantDialog.js
+wget -O react/features/remote-video-menu/components/web/RemoteVideoMenuTriggerButton.js \
+    $GITDIR/jitsi-meet/react/features/remote-video-menu/components/web/RemoteVideoMenuTriggerButton.js
+wget -O react/features/remote-video-menu/components/web/index.js \
+    $GITDIR/jitsi-meet/react/features/remote-video-menu/components/web/index.js
+
+make
+
+
+# -----------------------------------------------------------------------------
 # completed
 # -----------------------------------------------------------------------------
 COMPLETED=true
