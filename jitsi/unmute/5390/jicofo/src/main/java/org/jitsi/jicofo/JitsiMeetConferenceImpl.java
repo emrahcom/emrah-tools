@@ -17,7 +17,9 @@
  */
 package org.jitsi.jicofo;
 
+import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.bridge.*;
+import org.jitsi.jicofo.version.*;
 import org.jitsi.osgi.*;
 import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.colibri.*;
@@ -27,22 +29,20 @@ import net.java.sip.communicator.service.protocol.event.*;
 
 import org.jitsi.impl.protocol.xmpp.colibri.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
-import org.jitsi.jicofo.event.*;
 import org.jitsi.jicofo.jigasi.*;
 import org.jitsi.jicofo.recording.jibri.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.protocol.xmpp.colibri.*;
 import org.jitsi.protocol.xmpp.util.*;
-import org.jitsi.eventadmin.*;
 
 import org.jitsi.utils.logging.Logger;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.jid.parts.*;
-import org.jxmpp.stringprep.*;
 import org.osgi.framework.*;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.*;
@@ -71,14 +71,12 @@ import java.util.stream.*;
 public class JitsiMeetConferenceImpl
     implements JitsiMeetConference,
                RegistrationStateChangeListener,
-               JingleRequestHandler,
-               EventHandler
+               JingleRequestHandler
 {
     /**
      * The classLogger instance used by this class.
      */
-    private final static Logger classLogger
-        = Logger.getLogger(JitsiMeetConferenceImpl.class);
+    private final static Logger classLogger = Logger.getLogger(JitsiMeetConferenceImpl.class);
 
     /**
      * A random generator.
@@ -113,11 +111,6 @@ public class JitsiMeetConferenceImpl
      * The instance of conference configuration.
      */
     private final JitsiMeetConfig config;
-
-    /**
-     * The instance of global configuration.
-     */
-    private final JitsiMeetGlobalConfig globalConfig;
 
     /**
      * XMPP protocol provider handler used by the focus.
@@ -216,11 +209,15 @@ public class JitsiMeetConferenceImpl
     private volatile boolean started;
 
     /**
-     * Idle timestamp for this focus, -1 means active, otherwise
-     * System.currentTimeMillis() is set when focus becomes idle.
-     * Used to detect idle session and expire it if idle time limit is exceeded.
+     * The time at which this conference was created.
      */
-    private long idleTimestamp = -1;
+    private final Instant creationTime = Instant.now();
+
+    /**
+     * Whether at least one participant has joined this conference. This is exposed because to facilitate pruning
+     * conferences without any participants (which uses a separate code path than conferences with participants).
+     */
+    private boolean hasHadAtLeastOneParticipant = false;
 
     /**
      * A timeout task which will terminate media session of the user who is
@@ -243,11 +240,6 @@ public class JitsiMeetConferenceImpl
     private final String etherpadName;
 
     /**
-     * Bridge <tt>EventHandler</tt> registration.
-     */
-    private ServiceRegistration<EventHandler> eventHandlerRegistration;
-
-    /**
      * <tt>ScheduledExecutorService</tt> service used to schedule delayed tasks
      * by this <tt>JitsiMeetConference</tt> instance.
      */
@@ -267,13 +259,14 @@ public class JitsiMeetConferenceImpl
     /**
      * The conference properties that we advertise in presence in the XMPP MUC.
      */
-    private final ConferenceProperties conferenceProperties
-        = new ConferenceProperties();
+    private final ConferenceProperties conferenceProperties = new ConferenceProperties();
 
     /**
      * See {@link JitsiMeetConference#includeInStatistics()}
      */
     private final boolean includeInStatistics;
+
+    private final BridgeSelectorEventHandler bridgeSelectorEventHandler = new BridgeSelectorEventHandler();
 
     /**
      * Creates new instance of {@link JitsiMeetConferenceImpl}.
@@ -283,7 +276,6 @@ public class JitsiMeetConferenceImpl
      * @param listener the listener that will be notified about this instance
      *        events.
      * @param config the conference configuration instance.
-     * @param globalConfig an instance of the global config service.
      * @param logLevel (optional) the logging level to be used by this instance.
      *        See {@link #logger} for more details.
      */
@@ -294,24 +286,18 @@ public class JitsiMeetConferenceImpl
             ProtocolProviderHandler jvbXmppConnection,
             ConferenceListener listener,
             JitsiMeetConfig config,
-            JitsiMeetGlobalConfig globalConfig,
             Level logLevel,
             long gid,
             boolean includeInStatistics)
     {
-        this.protocolProviderHandler
-            = Objects.requireNonNull(
-                    protocolProviderHandler, "protocolProviderHandler");
-        this.jvbXmppConnection
-            = Objects.requireNonNull(
-                    jvbXmppConnection, "jvbXmppConnection");
+        this.protocolProviderHandler = Objects.requireNonNull(protocolProviderHandler, "protocolProviderHandler");
+        this.jvbXmppConnection = Objects.requireNonNull(jvbXmppConnection, "jvbXmppConnection");
         this.config = Objects.requireNonNull(config, "config");
 
         this.gid = gid;
         this.roomName = roomName;
         this.focusUserName = focusUserName;
         this.listener = listener;
-        this.globalConfig = globalConfig;
         this.etherpadName = createSharedDocumentName();
 
         if (logLevel != null)
@@ -328,12 +314,11 @@ public class JitsiMeetConferenceImpl
             ProtocolProviderHandler jvbXmppConnection,
             ConferenceListener listener,
             JitsiMeetConfig config,
-            JitsiMeetGlobalConfig globalConfig,
             Level logLevel,
             long gid)
     {
        this(roomName, focusUserName, protocolProviderHandler, jvbXmppConnection,
-            listener, config, globalConfig, logLevel, gid, false);
+            listener, config, logLevel, gid, false);
     }
 
     /**
@@ -357,47 +342,27 @@ public class JitsiMeetConferenceImpl
 
         try
         {
-            colibri
-                = jvbXmppConnection.getOperationSet(
-                        OperationSetColibriConference.class);
-            jingle
-                = protocolProviderHandler.getOperationSet(
-                        OperationSetJingle.class);
+            colibri = jvbXmppConnection.getOperationSet(OperationSetColibriConference.class);
+            jingle = protocolProviderHandler.getOperationSet(OperationSetJingle.class);
 
-            // Wraps OperationSetJingle in order to introduce
-            // our nasty "lip-sync" hack
-            if (Boolean.TRUE.equals(getConfig().isLipSyncEnabled()))
+            // Wraps OperationSetJingle in order to introduce our nasty "lip-sync" hack. Note that lip-sync will only
+            // be used for clients that signal support (see Participant.hasLipSyncSupport).
+            if (ConferenceConfig.config.enableLipSync())
             {
-                logger.info("Lip-sync enabled in " + getRoomName());
                 jingle = new LipSyncHack(this, jingle);
             }
 
-            chatOpSet
-                = protocolProviderHandler.getOperationSet(
-                        OperationSetMultiUserChat.class);
-            meetTools
-                = protocolProviderHandler.getOperationSet(
-                        OperationSetJitsiMeetTools.class);
-            jibriOpSet
-                = protocolProviderHandler.getOperationSet(
-                        OperationSetJibri.class);
+            chatOpSet = protocolProviderHandler.getOperationSet(OperationSetMultiUserChat.class);
+            meetTools = protocolProviderHandler.getOperationSet(OperationSetJitsiMeetTools.class);
+            jibriOpSet = protocolProviderHandler.getOperationSet(OperationSetJibri.class);
 
             BundleContext osgiCtx = FocusBundleActivator.bundleContext;
 
-            executor
-                = ServiceUtils2.getService(
-                        osgiCtx, ScheduledExecutorService.class);
+            executor = ServiceUtils2.getService(osgiCtx, ScheduledExecutorService.class);
+            services = ServiceUtils2.getService(osgiCtx, JitsiMeetServices.class);
 
-            services
-                = ServiceUtils2.getService(osgiCtx, JitsiMeetServices.class);
-
-            // Set pre-configured SIP gateway
-            //if (config.getPreConfiguredSipGateway() != null)
-            //{
-            //    services.setSipGateway(config.getPreConfiguredSipGateway());
-            //}
-
-            idleTimestamp = System.currentTimeMillis();
+            BridgeSelector bridgeSelector = services.getBridgeSelector();
+            bridgeSelector.addHandler(bridgeSelectorEventHandler);
 
             if (protocolProviderHandler.isRegistered())
             {
@@ -405,17 +370,6 @@ public class JitsiMeetConferenceImpl
             }
 
             protocolProviderHandler.addRegistrationListener(this);
-
-            // Register for bridge events
-            eventHandlerRegistration
-                = EventUtil.registerEventHandler(
-                        osgiCtx,
-                        new String[]
-                        {
-                            BridgeEvent.BRIDGE_UP,
-                            BridgeEvent.BRIDGE_DOWN
-                        },
-                        this);
 
             JibriDetector jibriDetector = services.getJibriDetector();
             if (jibriDetector != null && jibriOpSet != null)
@@ -425,8 +379,7 @@ public class JitsiMeetConferenceImpl
                             osgiCtx,
                             this,
                             getXmppConnection(),
-                            executor,
-                            globalConfig);
+                            executor);
 
                 jibriOpSet.addJibri(jibriRecorder);
             }
@@ -439,8 +392,7 @@ public class JitsiMeetConferenceImpl
                             osgiCtx,
                             this,
                             getXmppConnection(),
-                            FocusBundleActivator.getSharedScheduledThreadPool(),
-                            globalConfig);
+                            FocusBundleActivator.getSharedScheduledThreadPool());
 
                 jibriOpSet.addJibri(jibriSipGateway);
             }
@@ -505,12 +457,6 @@ public class JitsiMeetConferenceImpl
             jibriRecorder = null;
         }
 
-        if (eventHandlerRegistration != null)
-        {
-            eventHandlerRegistration.unregister();
-            eventHandlerRegistration = null;
-        }
-
         protocolProviderHandler.removeRegistrationListener(this);
 
         try
@@ -573,16 +519,29 @@ public class JitsiMeetConferenceImpl
         rolesAndPresence = new ChatRoomRoleAndPresence(this, chatRoom);
         rolesAndPresence.init();
 
-        transcriberManager = new TranscriberManager(protocolProviderHandler,
+        transcriberManager = new TranscriberManager(
+            protocolProviderHandler,
             chatOpSet.findRoom(roomName.toString()),
             services.getJigasiDetector());
         transcriberManager.init();
 
         chatRoom.join();
 
+        Collection<ExtensionElement> presenceExtensions = new ArrayList<>();
+
         // Advertise shared Etherpad document
-        meetTools.sendPresenceExtension(
-            chatRoom, EtherpadPacketExt.forDocumentName(etherpadName));
+        presenceExtensions.add(EtherpadPacketExt.forDocumentName(etherpadName));
+
+        ComponentVersionsExtension versionsExtension = new ComponentVersionsExtension();
+        versionsExtension.addComponentVersion(
+                ComponentVersionsExtension.COMPONENT_FOCUS,
+                CurrentVersionImpl.VERSION.toString());
+        presenceExtensions.add(versionsExtension);
+
+        setConferenceProperty(
+            ConferenceProperties.KEY_SUPPORTS_SESSION_RESTART,
+            Boolean.TRUE.toString(),
+            false);
 
         // Advertise the conference creation time in presence
         setConferenceProperty(
@@ -590,20 +549,10 @@ public class JitsiMeetConferenceImpl
             Long.toString(System.currentTimeMillis()),
             false);
 
-        // Advertise whether octo is enabled/disabled in presence
-        setConferenceProperty(
-            ConferenceProperties.KEY_OCTO_ENABLED,
-            Boolean.toString(config.isOctoEnabled()));
+        presenceExtensions.add(ConferenceProperties.clone(conferenceProperties));
 
-        // Trigger focus joined room event
-        EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
-        if (eventAdmin != null)
-        {
-            eventAdmin.postEvent(
-                    EventFactory.focusJoinedRoom(
-                            roomName,
-                            String.valueOf(getId())));
-        }
+        // updates presence with presenceExtensions and sends it
+        chatRoom.modifyPresence(null, presenceExtensions);
     }
 
     /**
@@ -633,9 +582,7 @@ public class JitsiMeetConferenceImpl
         conferenceProperties.put(key, value);
         if (updatePresence)
         {
-            meetTools.sendPresenceExtension(
-                chatRoom,
-                ConferenceProperties.clone(conferenceProperties));
+            meetTools.sendPresenceExtension(chatRoom, ConferenceProperties.clone(conferenceProperties));
         }
     }
 
@@ -661,7 +608,8 @@ public class JitsiMeetConferenceImpl
             transcriberManager = null;
         }
 
-        if (chatRoom.isJoined()) {
+        if (chatRoom.isJoined())
+        {
             chatRoom.leave();
         }
 
@@ -679,14 +627,12 @@ public class JitsiMeetConferenceImpl
     {
         synchronized (participantLock)
         {
-            logger.info(
-                    "Member "
-                        + chatRoomMember.getContactAddress() + " joined.");
+            logger.info("Member " + chatRoomMember.getContactAddress() + " joined.");
             getFocusManager().getStatistics().totalParticipants.incrementAndGet();
 
             if (!isFocusMember(chatRoomMember))
             {
-                idleTimestamp = -1;
+                hasHadAtLeastOneParticipant = true;
             }
 
             // Are we ready to start ?
@@ -703,9 +649,7 @@ public class JitsiMeetConferenceImpl
             {
                 for (final ChatRoomMember member : chatRoom.getMembers())
                 {
-                    inviteChatMember(
-                            (XmppChatMember) member,
-                            member == chatRoomMember);
+                    inviteChatMember((XmppChatMember) member, member == chatRoomMember);
                 }
             }
             // Only the one who has just joined
@@ -722,11 +666,9 @@ public class JitsiMeetConferenceImpl
      */
     private ColibriConference createNewColibriConference(Jid bridgeJid)
     {
-        ColibriConferenceImpl colibriConference
-            = (ColibriConferenceImpl) colibri.createNewConference();
-        colibriConference.setGID(String.valueOf(gid));
-
-        colibriConference.setConfig(config);
+        ColibriConferenceImpl colibriConference = (ColibriConferenceImpl) colibri.createNewConference();
+        // JVB expects the hex string
+        colibriConference.setGID(Long.toHexString(gid));
 
         colibriConference.setName(chatRoom.getRoomJid());
         colibriConference.setJitsiVideobridge(bridgeJid);
@@ -744,8 +686,7 @@ public class JitsiMeetConferenceImpl
      * result of just having joined (as opposed to e.g. another participant
      * joining triggering the invite).
      */
-    private void inviteChatMember(XmppChatMember chatRoomMember,
-                                  boolean justJoined)
+    private void inviteChatMember(XmppChatMember chatRoomMember, boolean justJoined)
     {
         synchronized (participantLock)
         {
@@ -764,7 +705,7 @@ public class JitsiMeetConferenceImpl
                 = new Participant(
                         this,
                         chatRoomMember,
-                        globalConfig.getMaxSourcesPerUser());
+                        ConferenceConfig.config.getMaxSsrcsPerUser());
 
             participants.add(participant);
             inviteParticipant(
@@ -787,50 +728,25 @@ public class JitsiMeetConferenceImpl
         if (findBridgeSession(participant) != null)
         {
             // This should never happen.
-            logger.error("The participant already has a bridge:"
-                             + participant.getMucJid());
+            logger.error("The participant already has a bridge:" + participant.getMucJid());
             return null;
         }
 
         // Select a Bridge for the new participant.
-        Bridge bridge = null;
-        Jid enforcedVideoBridge = config.getEnforcedVideobridge();
         BridgeSelector bridgeSelector = getServices().getBridgeSelector();
-
-
-        if (enforcedVideoBridge != null)
-        {
-            bridge = bridgeSelector.getBridge(enforcedVideoBridge);
-            if (bridge == null)
-            {
-                logger.warn("The enforced bridge is not registered with "
-                                + "BridgeSelector, will try to use a "
-                                + "different one.");
-            }
-        }
-
-        if (bridge == null)
-        {
-            bridge
-                = bridgeSelector.selectBridge(
-                    this,
-                    participant.getChatMember().getRegion(),
-                    config.isOctoEnabled());
-        }
+        Bridge bridge = bridgeSelector.selectBridge(this, participant.getChatMember().getRegion());
 
         if (bridge == null)
         {
             // Can not find a bridge to use.
-            logger.error(
-                "Can not invite participant -- no bridge available.");
+            logger.error("Can not invite participant -- no bridge available.");
 
             if (chatRoom != null
                 && !chatRoom.containsPresenceExtension(
                 BridgeNotAvailablePacketExt.ELEMENT_NAME,
                 BridgeNotAvailablePacketExt.NAMESPACE))
             {
-                meetTools.sendPresenceExtension(
-                    chatRoom, new BridgeNotAvailablePacketExt());
+                meetTools.sendPresenceExtension(chatRoom, new BridgeNotAvailablePacketExt());
             }
             return null;
 
@@ -845,8 +761,22 @@ public class JitsiMeetConferenceImpl
      */
     private Stream<BridgeSession> operationalBridges()
     {
-        return bridges.stream().
-            filter(session -> !session.hasFailed && session.bridge.isOperational());
+        return bridges.stream().filter(session -> !session.hasFailed && session.bridge.isOperational());
+    }
+
+    /**
+     * Removes all non-operational bridges from the conference and re-invites their participants.
+     */
+    private void removeNonOperationalBridges()
+    {
+        Set<Jid> nonOperationalBridges = bridges.stream()
+                .filter(session -> session.hasFailed || !session.bridge.isOperational())
+                .map(session -> session.bridge.getJid())
+                .collect(Collectors.toSet());
+        if (!nonOperationalBridges.isEmpty())
+        {
+            onMultipleBridgesDown(nonOperationalBridges);
+        }
     }
 
     /**
@@ -869,12 +799,23 @@ public class JitsiMeetConferenceImpl
             boolean[] startMuted)
     {
         BridgeSession bridgeSession;
+
+        // Some of the bridges in the conference may have become non-operational. Inviting a new participant to the
+        // conference requires communication with its bridges, so we remove them from the conference first.
+        removeNonOperationalBridges();
+
         synchronized (bridges)
         {
             Bridge bridge = selectBridge(participant);
             if (bridge == null)
             {
+                logger.error("Failed to select a bridge for " + participant);
                 return;
+            }
+
+            if (!bridge.isOperational())
+            {
+                logger.error("The selected bridge is non-operational.");
             }
 
             bridgeSession = findBridgeSession(bridge);
@@ -882,15 +823,7 @@ public class JitsiMeetConferenceImpl
             {
                 // The selected bridge is not yet used for this conference,
                 // so initialize a new BridgeSession
-                try
-                {
-                    bridgeSession = new BridgeSession(bridge);
-                }
-                catch (XmppStringprepException e)
-                {
-                    logger.error("Invalid room name", e);
-                    return;
-                }
+                bridgeSession = new BridgeSession(bridge);
 
                 bridges.add(bridgeSession);
                 setConferenceProperty(
@@ -902,10 +835,9 @@ public class JitsiMeetConferenceImpl
                     if (!getFocusManager().isJicofoIdConfigured())
                     {
                         logger.warn(
-                            "Enabling Octo while the jicofo ID is not set. "
-                            + "Configure a valid value [1-65535] by setting "
-                            + FocusManager.JICOFO_SHORT_ID_PNAME
-                            + ". Future versions will require this for Octo.");
+                            "Enabling Octo while the jicofo ID is not set. Configure a valid value [1-65535] by "
+                            + "setting org.jitsi.jicofo.SHORT_ID in sip-communicator.properties or jicofo.octo.id in "
+                            + "jicofo.conf. Future versions will require this for Octo.");
                     }
                     // Octo needs to be enabled (by inviting an Octo
                     // participant for each bridge), or if it is already enabled
@@ -933,6 +865,12 @@ public class JitsiMeetConferenceImpl
 
             participant.setChannelAllocator(channelAllocator);
             FocusBundleActivator.getSharedThreadPool().submit(channelAllocator);
+
+            if (reInvite)
+            {
+                propagateNewSourcesToOcto(
+                    participant.getBridgeSession(), participant.getSourcesCopy(), participant.getSourceGroupsCopy());
+            }
         }
     }
 
@@ -952,8 +890,7 @@ public class JitsiMeetConferenceImpl
                                  ". All relays:" + allRelays);
             }
 
-            operationalBridges().
-                forEach(bridge -> bridge.setRelays(allRelays));
+            operationalBridges().forEach(bridge -> bridge.setRelays(allRelays));
         }
     }
 
@@ -981,11 +918,8 @@ public class JitsiMeetConferenceImpl
     private void logRegions()
     {
 
-        StringBuilder sb
-            = new StringBuilder(
-                "Region info, conference=" + getId()
-                    + " octo_enabled= " + config.isOctoEnabled()
-                    + ": [");
+        StringBuilder sb = new StringBuilder(
+                "Region info, conference=" + getId() + ": [");
         synchronized (bridges)
         {
             for (BridgeSession bridgeSession : bridges)
@@ -1084,9 +1018,7 @@ public class JitsiMeetConferenceImpl
      * participant have to start video or audio muted. The first element
      * should be associated with the audio and the second with video.
      */
-    private boolean[] hasToStartMuted(
-            Participant participant,
-            boolean justJoined)
+    private boolean[] hasToStartMuted(Participant participant, boolean justJoined)
     {
         final boolean[] startMuted = new boolean[] {false, false};
         if (this.startMuted != null && this.startMuted[0] && justJoined)
@@ -1131,16 +1063,13 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Returns {@code true} if there are at least two non-focus participants in
-     * the room.
-     *
-     * @return <tt>true</tt> if we have at least two non-focus participants.
+     * Returns {@code true} if there are enough participants in the room to start a conference.
      */
     private boolean checkMinParticipants()
     {
-        int minParticipants = config.getMinParticipants();
-        // minParticipants + 1 focus
-        if (chatRoom.getMembersCount() >= (minParticipants + 1))
+        int minParticipants = ConferenceConfig.config.getMinParticipants();
+        // Subtract one for jicofo's participant
+        if (chatRoom.getMembersCount() - 1 >= minParticipants)
         {
             return true;
         }
@@ -1260,8 +1189,7 @@ public class JitsiMeetConferenceImpl
     {
         synchronized (participantLock)
         {
-            logger.info(
-                "Member " + chatRoomMember.getContactAddress() + " kicked !!!");
+            logger.info("Member " + chatRoomMember.getContactAddress() + " kicked !!!");
 
             onMemberLeft(chatRoomMember);
         }
@@ -1281,8 +1209,7 @@ public class JitsiMeetConferenceImpl
 
             logger.info("Member " + contactAddress + " is leaving");
 
-            Participant leftParticipant
-                = findParticipantForChatMember(chatRoomMember);
+            Participant leftParticipant = findParticipantForChatMember(chatRoomMember);
             if (leftParticipant != null)
             {
                 terminateParticipant(
@@ -1293,9 +1220,7 @@ public class JitsiMeetConferenceImpl
             }
             else
             {
-                logger.warn(
-                        "Participant not found for " + contactAddress
-                            + " terminated already or never started ?");
+                logger.warn("Participant not found for " + contactAddress + " terminated already or never started ?");
             }
 
             if (participants.size() == 1)
@@ -1309,10 +1234,11 @@ public class JitsiMeetConferenceImpl
         }
     }
 
-    private void terminateParticipant(Participant    participant,
-                                      Reason         reason,
-                                      String         message,
-                                      boolean        sendSessionTerminate)
+    private void terminateParticipant(
+            Participant participant,
+            Reason reason,
+            String message,
+            boolean sendSessionTerminate)
     {
         logger.info(String.format(
                 "Terminating %s, reason: %s, send st: %s",
@@ -1320,7 +1246,6 @@ public class JitsiMeetConferenceImpl
                 reason,
                 sendSessionTerminate));
 
-        BridgeSession bridgeSession;
         synchronized (participantLock)
         {
             Jid contactAddress = participant.getMucJid();
@@ -1339,26 +1264,13 @@ public class JitsiMeetConferenceImpl
                 participant.setJingleSession(null);
             }
 
-            bridgeSession = participant.terminateBridgeSession();
-
             boolean removed = participants.remove(participant);
             logger.info("Removed participant: " + removed + ", " + contactAddress);
         }
 
+        BridgeSession bridgeSession = terminateParticipantBridgeSession(participant);
         if (bridgeSession != null)
         {
-            MediaSourceMap removedSources = participant.getSourcesCopy();
-            MediaSourceGroupMap removedGroups = participant.getSourceGroupsCopy();
-
-            synchronized (bridges)
-            {
-                operationalBridges()
-                    .filter(bridge -> !bridge.equals(bridgeSession))
-                    .forEach(
-                        bridge -> bridge.removeSourcesFromOcto(
-                            removedSources, removedGroups));
-            }
-
             maybeExpireBridgeSession(bridgeSession);
         }
     }
@@ -1418,8 +1330,7 @@ public class JitsiMeetConferenceImpl
     {
         for (Participant participant : participants)
         {
-            if (participant.getChatMember().getOccupantJid().equals(
-                    jingleSession.getAddress()))
+            if (participant.getChatMember().getOccupantJid().equals(jingleSession.getAddress()))
             {
                 return participant;
             }
@@ -1443,8 +1354,7 @@ public class JitsiMeetConferenceImpl
     {
         for (Participant participant : participants)
         {
-            if (participant.getChatMember().getOccupantJid()
-                    .equals(roomJid))
+            if (participant.getChatMember().getOccupantJid().equals(roomJid))
             {
                 return participant;
             }
@@ -1477,9 +1387,7 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public XMPPError onSessionAccept(
-            JingleSession jingleSession,
-            List<ContentPacketExtension> answer)
+    public XMPPError onSessionAccept(JingleSession jingleSession, List<ContentPacketExtension> answer)
     {
         logger.info("Got session-accept from: " + jingleSession.getAddress());
 
@@ -1506,8 +1414,7 @@ public class JitsiMeetConferenceImpl
 
             logger.warn("onSessionInfo: " + errorMsg);
 
-            return XMPPError.from(
-                    XMPPError.Condition.item_not_found, errorMsg).build();
+            return XMPPError.from(XMPPError.Condition.item_not_found, errorMsg).build();
         }
 
         IceStatePacketExtension iceStatePE
@@ -1549,6 +1456,7 @@ public class JitsiMeetConferenceImpl
                     address,
                     bridgeSessionId));
         }
+        listener.participantIceFailed();
 
         return null;
     }
@@ -1570,8 +1478,7 @@ public class JitsiMeetConferenceImpl
 
             logger.warn("onSessionTerminate: " + errorMsg);
 
-            return XMPPError.from(
-                    XMPPError.Condition.item_not_found, errorMsg).build();
+            return XMPPError.from(XMPPError.Condition.item_not_found, errorMsg).build();
         }
 
         BridgeSessionPacketExtension bsPE
@@ -1581,6 +1488,11 @@ public class JitsiMeetConferenceImpl
         String bridgeSessionId = bsPE != null ? bsPE.getId() : null;
         BridgeSession bridgeSession = findBridgeSession(participant);
         boolean restartRequested = bsPE != null ? bsPE.isRestart() : false;
+
+        if (restartRequested)
+        {
+            listener.participantRequestedRestart();
+        }
 
         if (bridgeSession == null || !bridgeSession.id.equals(bridgeSessionId))
         {
@@ -1677,8 +1589,7 @@ public class JitsiMeetConferenceImpl
         {
             operationalBridges()
                 .filter(bridge -> !bridge.equals(exclude))
-                .forEach(
-                    bridge -> bridge.addSourcesToOcto(sources, sourceGroups));
+                .forEach(bridge -> bridge.addSourcesToOcto(sources, sourceGroups));
         }
     }
 
@@ -1689,14 +1600,12 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public void onTransportInfo(JingleSession session,
-                                List<ContentPacketExtension> contentList)
+    public void onTransportInfo(JingleSession session, List<ContentPacketExtension> contentList)
     {
         Participant participant = findParticipantForJingleSession(session);
         if (participant == null)
         {
-            logger.warn("Failed to process transport-info," +
-                             " no session for: " + session.getAddress());
+            logger.warn("Failed to process transport-info, no session for: " + session.getAddress());
             return;
         }
 
@@ -1726,9 +1635,7 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public XMPPError onTransportAccept(
-        JingleSession jingleSession,
-        List<ContentPacketExtension> contents)
+    public XMPPError onTransportAccept(JingleSession jingleSession, List<ContentPacketExtension> contents)
     {
         logger.info("Got transport-accept from: " + jingleSession.getAddress());
 
@@ -1757,9 +1664,7 @@ public class JitsiMeetConferenceImpl
         // We could expire channels immediately here, but we're leaving them to
         // auto expire on the bridge or we're going to do that when user leaves
         // the MUC anyway
-        logger.error(
-                "Participant has rejected our transport offer: " + p.getMucJid()
-                    + ", response: " + reply.toXML());
+        logger.error("Participant has rejected our transport offer: " + p.getMucJid() + ", response: " + reply.toXML());
     }
 
     /**
@@ -1771,18 +1676,15 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public XMPPError onAddSource(JingleSession jingleSession,
-                                 List<ContentPacketExtension> contents)
+    public XMPPError onAddSource(JingleSession jingleSession, List<ContentPacketExtension> contents)
     {
         Jid address = jingleSession.getAddress();
-        Participant participant
-            = findParticipantForJingleSession(jingleSession);
+        Participant participant = findParticipantForJingleSession(jingleSession);
         if (participant == null)
         {
             String errorMsg = "Add-source: no state for " + address;
             logger.warn(errorMsg);
-            return XMPPError.from(
-                    XMPPError.Condition.item_not_found, errorMsg).build();
+            return XMPPError.from(XMPPError.Condition.item_not_found, errorMsg).build();
         }
 
         Object[] added;
@@ -1792,10 +1694,8 @@ public class JitsiMeetConferenceImpl
         }
         catch (InvalidSSRCsException e)
         {
-            logger.error(
-                "Error adding SSRCs from: " + address + ": " + e.getMessage());
-            return XMPPError.from(
-                XMPPError.Condition.bad_request, e.getMessage()).build();
+            logger.error("Error adding SSRCs from: " + address + ": " + e.getMessage());
+            return XMPPError.from(XMPPError.Condition.bad_request, e.getMessage()).build();
         }
 
         MediaSourceMap sourcesToAdd = (MediaSourceMap) added[0];
@@ -1820,8 +1720,7 @@ public class JitsiMeetConferenceImpl
                     participant.getSourceGroupsCopy(),
                     participant.getColibriChannelsInfo());
 
-                propagateNewSourcesToOcto(
-                        bridgeSession, sourcesToAdd, sourceGroupsToAdd);
+                propagateNewSourcesToOcto(bridgeSession, sourcesToAdd, sourceGroupsToAdd);
             }
             else
             {
@@ -1844,52 +1743,36 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public XMPPError onRemoveSource(JingleSession sourceJingleSession,
-                               List<ContentPacketExtension> contents)
+    public XMPPError onRemoveSource(JingleSession sourceJingleSession, List<ContentPacketExtension> contents)
     {
-        MediaSourceMap sourcesToRemove
-            = MediaSourceMap.getSourcesFromContent(contents);
+        MediaSourceMap sourcesToRemove = MediaSourceMap.getSourcesFromContent(contents);
+        MediaSourceGroupMap sourceGroupsToRemove = MediaSourceGroupMap.getSourceGroupsForContents(contents);
 
-        MediaSourceGroupMap sourceGroupsToRemove
-            = MediaSourceGroupMap.getSourceGroupsForContents(contents);
-
-        return removeSources(
-            sourceJingleSession, sourcesToRemove, sourceGroupsToRemove, true);
+        return removeSources(sourceJingleSession, sourcesToRemove, sourceGroupsToRemove, true);
     }
 
     /**
      * Updates the RTP description, transport and propagates sources and source
      * groups of a participant that sends the session-accept or transport-accept
      * Jingle IQs.
-     *
-     * @param jingleSession
-     * @param contents
-     * @return
      */
-    private XMPPError onSessionAcceptInternal(
-        JingleSession jingleSession,
-        List<ContentPacketExtension> contents)
+    private XMPPError onSessionAcceptInternal(JingleSession jingleSession, List<ContentPacketExtension> contents)
     {
-        Participant participant
-            = findParticipantForJingleSession(jingleSession);
+        Participant participant = findParticipantForJingleSession(jingleSession);
         Jid participantJid = jingleSession.getAddress();
 
         if (participant == null)
         {
-            String errorMsg
-                = "No participant found for: " + participantJid;
+            String errorMsg = "No participant found for: " + participantJid;
             logger.warn(errorMsg);
-            return XMPPError.from(XMPPError.Condition.item_not_found,
-                errorMsg).build();
+            return XMPPError.from(XMPPError.Condition.item_not_found, errorMsg).build();
         }
 
         JingleSession jingleSessionCopy = participant.getJingleSession();
         if (jingleSessionCopy != null && jingleSession != jingleSessionCopy)
         {
             //FIXME: we should reject it ?
-            logger.error(
-                "Reassigning jingle session for participant: "
-                    + participantJid);
+            logger.error("Reassigning jingle session for participant: " + participantJid);
         }
 
         participant.setJingleSession(jingleSession);
@@ -1898,49 +1781,37 @@ public class JitsiMeetConferenceImpl
         participant.setRTPDescription(contents);
         participant.addTransportFromJingle(contents);
 
-        MediaSourceMap sourcesAdvertised
-            = MediaSourceMap.getSourcesFromContent(contents);
-        MediaSourceGroupMap sourceGroupsAdvertised
-            = MediaSourceGroupMap.getSourceGroupsForContents(contents);
-        if (sourcesAdvertised.isEmpty()
-            && globalConfig.injectSsrcForRecvOnlyEndpoints)
+        MediaSourceMap sourcesAdvertised = MediaSourceMap.getSourcesFromContent(contents);
+        MediaSourceGroupMap sourceGroupsAdvertised = MediaSourceGroupMap.getSourceGroupsForContents(contents);
+        if (sourcesAdvertised.isEmpty() && ConferenceConfig.config.injectSsrcForRecvOnlyEndpoints())
         {
             // We inject an SSRC in order to ensure that the participant has
             // at least one SSRC advertised. Otherwise, non-local bridges in the
             // conference will not be aware of the participant.
-            SourcePacketExtension sourcePacketExtension
-                = new SourcePacketExtension();
+            SourcePacketExtension sourcePacketExtension = new SourcePacketExtension();
             long ssrc = RANDOM.nextInt() & 0xffff_ffffL;
-            logger.info(participant
-                + " did not advertise any SSRCs. Injecting " + ssrc);
+            logger.info(participant + " did not advertise any SSRCs. Injecting " + ssrc);
             sourcePacketExtension.setSSRC(ssrc);
-            sourcesAdvertised.addSource(
-                MediaType.AUDIO.toString(),
-                sourcePacketExtension);
+            sourcesAdvertised.addSource(MediaType.AUDIO.toString(), sourcePacketExtension);
         }
         MediaSourceMap sourcesAdded;
         MediaSourceGroupMap sourceGroupsAdded;
         try
         {
             Object[] sourcesAndGroupsAdded
-                = tryAddSourcesToParticipant(
-                participant, sourcesAdvertised, sourceGroupsAdvertised);
+                = tryAddSourcesToParticipant(participant, sourcesAdvertised, sourceGroupsAdvertised);
             sourcesAdded = (MediaSourceMap) sourcesAndGroupsAdded[0];
             sourceGroupsAdded = (MediaSourceGroupMap) sourcesAndGroupsAdded[1];
         }
         catch (InvalidSSRCsException e)
         {
-            logger.error(
-                "Error processing session accept from: "
-                    + participantJid +": " + e.getMessage());
+            logger.error("Error processing session accept from: " + participantJid +": " + e.getMessage());
 
-            return XMPPError.from(
-                XMPPError.Condition.bad_request, e.getMessage()).build();
+            return XMPPError.from(XMPPError.Condition.bad_request, e.getMessage()).build();
         }
 
-        logger.info("Received session-accept from " +
-            participant.getMucJid() +
-            " with accepted sources:" + sourcesAdded);
+        logger.info(
+                "Received session-accept from " + participant.getMucJid() + " with accepted sources:" + sourcesAdded);
 
         // Update channel info - we may miss update during conference restart,
         // but the state will be synced up after channels are allocated for this
@@ -1954,24 +1825,20 @@ public class JitsiMeetConferenceImpl
             }
             else
             {
-                logger
-                    .warn("No bridge found for a participant: " + participant);
+                logger.warn("No bridge found for a participant: " + participant);
                 // TODO: how do we handle this? Re-invite?
             }
 
             // If we accepted any new sources from the participant, update
             // the state of all remote bridges.
-            if ((!sourcesAdded.isEmpty() || !sourceGroupsAdded.isEmpty())
-                && participantBridge != null)
+            if ((!sourcesAdded.isEmpty() || !sourceGroupsAdded.isEmpty()) && participantBridge != null)
             {
-                propagateNewSourcesToOcto(
-                    participantBridge, sourcesAdded, sourceGroupsAdded);
+                propagateNewSourcesToOcto(participantBridge, sourcesAdded, sourceGroupsAdded);
             }
         }
 
         // Loop over current participant and send 'source-add' notification
-        propagateNewSources(
-            participant, sourcesAdded.copyDeep(), sourceGroupsAdded.copy());
+        propagateNewSources(participant, sourcesAdded.copyDeep(), sourceGroupsAdded.copy());
 
         // Notify the participant itself since it is now stable
         if (participant.hasSourcesToAdd())
@@ -2000,25 +1867,21 @@ public class JitsiMeetConferenceImpl
     /**
      * Removes sources from the conference and notifies other participants.
      *
-     * @param sourceJingleSession source Jingle session from which sources are
-     *                            being removed.
-     * @param sourcesToRemove the {@link MediaSourceMap} of sources to be removed from
-     *                      the conference.
-     * @param updateChannels tells whether or not sources update request should be
-     *                       sent to the bridge.
+     * @param sourceJingleSession source Jingle session from which sources are being removed.
+     * @param sourcesToRemove the {@link MediaSourceMap} of sources to be removed from the conference.
+     * @param updateChannels tells whether or not sources update request should be sent to the bridge.
      */
-    private XMPPError removeSources(JingleSession        sourceJingleSession,
-                               MediaSourceMap       sourcesToRemove,
-                               MediaSourceGroupMap  sourceGroupsToRemove,
-                               boolean              updateChannels)
+    private XMPPError removeSources(
+            JingleSession sourceJingleSession,
+            MediaSourceMap sourcesToRemove,
+            MediaSourceGroupMap sourceGroupsToRemove,
+            boolean updateChannels)
     {
-        Participant participant
-            = findParticipantForJingleSession(sourceJingleSession);
+        Participant participant = findParticipantForJingleSession(sourceJingleSession);
         Jid participantJid = sourceJingleSession.getAddress();
         if (participant == null)
         {
             logger.warn("Remove-source: no session for " + participantJid);
-
             return null;
         }
 
@@ -2030,35 +1893,28 @@ public class JitsiMeetConferenceImpl
                         participant.getEndpointId(),
                         conferenceSources,
                         conferenceSourceGroups,
-                        globalConfig.getMaxSourcesPerUser(),
+                        ConferenceConfig.config.getMaxSsrcsPerUser(),
                         this.logger);
 
         Object[] removed;
 
         try
         {
-            removed
-                = validator.tryRemoveSourcesAndGroups(
-                        sourcesToRemove, sourceGroupsToRemove);
+            removed = validator.tryRemoveSourcesAndGroups(sourcesToRemove, sourceGroupsToRemove);
         }
         catch (InvalidSSRCsException e)
         {
-            logger.error(
-                    "Error removing SSRCs from: " + participantJid
-                            + ": " + e.getMessage());
-            return XMPPError.from(
-                    XMPPError.Condition.bad_request, e.getMessage()).build();
+            logger.error("Error removing SSRCs from: " + participantJid + ": " + e.getMessage());
+            return XMPPError.from(XMPPError.Condition.bad_request, e.getMessage()).build();
         }
 
         // Only sources owned by this participant end up in "removed" set
         final MediaSourceMap removedSources = (MediaSourceMap) removed[0];
-        final MediaSourceGroupMap removedGroups
-                = (MediaSourceGroupMap) removed[1];
+        final MediaSourceGroupMap removedGroups = (MediaSourceGroupMap) removed[1];
 
         if (removedSources.isEmpty() && removedGroups.isEmpty())
         {
-            logger.warn(
-                    "No sources or groups to be removed from: "+ participantJid);
+            logger.warn( "No sources or groups to be removed from: "+ participantJid);
             return null;
         }
 
@@ -2090,9 +1946,7 @@ public class JitsiMeetConferenceImpl
         {
             operationalBridges()
                 .filter(bridge -> !bridge.equals(bridgeSession))
-                .forEach(
-                    bridge -> bridge.removeSourcesFromOcto(
-                            removedSources, removedGroups));
+                .forEach(bridge -> bridge.removeSourcesFromOcto(removedSources, removedGroups));
         }
 
         logger.info("Removing " + participantJid + " sources " + removedSources);
@@ -2111,15 +1965,9 @@ public class JitsiMeetConferenceImpl
                     }
                     else
                     {
-                        logger.warn(
-                            "Remove source: no jingle session for "
-                                + participantJid);
-
-                        otherParticipant.scheduleSourcesToRemove(
-                            removedSources);
-
-                        otherParticipant.scheduleSourceGroupsToRemove(
-                            removedGroups);
+                        logger.warn("Remove source: no jingle session for " + participantJid);
+                        otherParticipant.scheduleSourcesToRemove(removedSources);
+                        otherParticipant.scheduleSourceGroupsToRemove(removedGroups);
                     }
                 });
 
@@ -2130,19 +1978,15 @@ public class JitsiMeetConferenceImpl
      * Adds the sources and groups described by the given list of Jingle
      * {@link ContentPacketExtension} to the given participant.
      *
-     * @param participant - The {@link Participant} instance to which sources
-     * and groups will be added.
-     * @param contents - The list of Jingle 'content' packet extensions which
-     * describe media sources and groups.
+     * @param participant - The {@link Participant} instance to which sources and groups will be added.
+     * @param contents - The list of Jingle 'content' packet extensions which describe media sources and groups.
      *
      * @return See returns description of
      *         {@link SSRCValidator#tryAddSourcesAndGroups(MediaSourceMap, MediaSourceGroupMap)}.
      * @throws InvalidSSRCsException See throws description of
      *         {@link SSRCValidator#tryAddSourcesAndGroups(MediaSourceMap, MediaSourceGroupMap)}.
      */
-    private Object[] tryAddSourcesToParticipant(
-            Participant participant,
-            List<ContentPacketExtension> contents)
+    private Object[] tryAddSourcesToParticipant(Participant participant, List<ContentPacketExtension> contents)
         throws InvalidSSRCsException
     {
         return tryAddSourcesToParticipant(
@@ -2154,8 +1998,7 @@ public class JitsiMeetConferenceImpl
     /**
      * Adds the given sources and groups to the given participant.
      *
-     * @param participant - The {@link Participant} instance to which sources
-     * and groups will be added.
+     * @param participant - The {@link Participant} instance to which sources and groups will be added.
      * @param newSources - The new media sources to add.
      * @param newGroups - The new media group sources to add.
      *
@@ -2178,19 +2021,16 @@ public class JitsiMeetConferenceImpl
                     participant.getEndpointId(),
                     conferenceSources,
                     conferenceSourceGroups,
-                    globalConfig.getMaxSourcesPerUser(),
+                    ConferenceConfig.config.getMaxSsrcsPerUser(),
                     this.logger);
 
         // Claim the new sources by injecting owner tag into packet extensions,
         // so that the validator will be able to tell who owns which sources.
         participant.claimSources(newSources);
 
-        Object[] added
-            = validator.tryAddSourcesAndGroups(newSources, newGroups);
+        Object[] added = validator.tryAddSourcesAndGroups(newSources, newGroups);
 
-        participant.addSourcesAndGroups(
-            (MediaSourceMap) added[0],
-            (MediaSourceGroupMap) added[1]);
+        participant.addSourcesAndGroups((MediaSourceMap) added[0], (MediaSourceGroupMap) added[1]);
 
         return added;
     }
@@ -2198,38 +2038,36 @@ public class JitsiMeetConferenceImpl
     /**
      * Gathers the list of all sources that exist in the current conference state.
      *
-     * @return <tt>MediaSourceMap</tt> of all sources of given media type that exist
-     * in the current conference state.
+     * @return <tt>MediaSourceMap</tt> of all sources of given media type that exist in the current conference state.
      */
     private MediaSourceMap getAllSources()
     {
-        return getAllSources(Collections.emptyList());
+        return getAllSources(Collections.emptyList(), false);
     }
 
     /**
      * Gathers the list of all sources that exist in the current conference state.
      *
-     * @param except optional <tt>Participant</tt> instance whose sources will be
-     *               excluded from the list
+     * @param except optional <tt>Participant</tt> instance whose sources will be excluded from the list.
      *
      * @return <tt>MediaSourceMap</tt> of all sources of given media type that exist
      * in the current conference state.
      */
     MediaSourceMap getAllSources(Participant except)
     {
-        return getAllSources(Collections.singletonList(except));
+        return getAllSources(Collections.singletonList(except), false);
     }
 
     /**
      * Gathers the list of all sources that exist in the current conference state.
      *
-     * @param except optional <tt>Participant</tt> instance whose sources will be
-     *               excluded from the list
+     * @param except optional <tt>Participant</tt> instance whose sources will be excluded from the list
+     * @param skipParticipantsWithoutBridgeSession skip sources from participants without a  bridge session.
      *
      * @return <tt>MediaSourceMap</tt> of all sources of given media type that exist
      * in the current conference state.
      */
-    private MediaSourceMap getAllSources(List<Participant> except)
+    private MediaSourceMap getAllSources(List<Participant> except, boolean skipParticipantsWithoutBridgeSession)
     {
         MediaSourceMap mediaSources = new MediaSourceMap();
 
@@ -2241,6 +2079,18 @@ public class JitsiMeetConferenceImpl
                 continue;
             }
 
+            // If the return value is used to create a new octo participant then
+            // we skip participants without a bridge session (which happens when
+            // a bridge fails & participant are re-invited). The reason why we
+            // do this is to avoid adding sources to the (newly created) octo
+            // participant from soon to be re-invited (and hence soon to be local)
+            // participants, causing a weird transition from octo participant to
+            // local participant in the new bridge.
+            if (skipParticipantsWithoutBridgeSession && participant.getBridgeSession() == null)
+            {
+                continue;
+            }
+
             mediaSources.add(participant.getSourcesCopy());
         }
 
@@ -2248,43 +2098,36 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Gathers the list of all source groups that exist in the current conference
-     * state.
+     * Gathers the list of all source groups that exist in the current conference state.
      *
-     * @return the list of all source groups of given media type that exist in
-     *         current conference state.
+     * @return the list of all source groups of given media type that exist in current conference state.
      */
     private MediaSourceGroupMap getAllSourceGroups()
     {
-        return getAllSourceGroups(Collections.emptyList());
+        return getAllSourceGroups(Collections.emptyList(), false);
     }
 
     /**
      * Gathers the list of all source groups that exist in the current conference
      * state.
      *
-     * @param except optional <tt>Participant</tt> instance whose source groups
-     *               will be excluded from the list
-     *
-     * @return the list of all source groups of given media type that exist in
-     *         current conference state.
+     * @param except optional <tt>Participant</tt> instance whose source groups will be excluded from the list.
+     * @return the list of all source groups of given media type that exist in current conference state.
      */
     MediaSourceGroupMap getAllSourceGroups(Participant except)
     {
-        return getAllSourceGroups(Collections.singletonList(except));
+        return getAllSourceGroups(Collections.singletonList(except), false);
     }
 
     /**
-     * Gathers the list of all source groups that exist in the current conference
-     * state.
+     * Gathers the list of all source groups that exist in the current conference state.
      *
-     * @param except a list of participants whose sources will not be included
-     * in the result.
-     *
-     * @return the list of all source groups of given media type that exist in
-     *         current conference state.
+     * @param except a list of participants whose sources will not be included in the result.
+     * @param skipParticipantsWithoutBridgeSession skip source groups from participants without a bridge session.
+     * @return the list of all source groups of given media type that exist in current conference state.
      */
-    private MediaSourceGroupMap getAllSourceGroups(List<Participant> except)
+    private MediaSourceGroupMap getAllSourceGroups(
+        List<Participant> except, boolean skipParticipantsWithoutBridgeSession)
     {
         MediaSourceGroupMap sourceGroups = new MediaSourceGroupMap();
 
@@ -2296,21 +2139,22 @@ public class JitsiMeetConferenceImpl
                 continue;
             }
 
+            // If the return value is used to create a new octo participant then
+            // we skip participants without a bridge session (which happens when
+            // a bridge fails & participant are re-invited). The reason why we
+            // do this is to avoid adding sources to the (newly created) octo
+            // participant from soon to be re-invited (and hence soon to be local)
+            // participants, causing a weird transition from octo participant to
+            // local participant in the new bridge.
+            if (skipParticipantsWithoutBridgeSession && participant.getBridgeSession() == null)
+            {
+                continue;
+            }
+
             sourceGroups.add(participant.getSourceGroupsCopy());
         }
 
         return sourceGroups;
-    }
-
-    /**
-     * Returns global config instance.
-     *
-     * @return instance of <tt>JitsiMeetGlobalConfig</tt> used by this
-     * conference.
-     */
-    JitsiMeetGlobalConfig getGlobalConfig()
-    {
-        return globalConfig;
     }
 
     /**
@@ -2344,14 +2188,16 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Returns {@link System#currentTimeMillis()} timestamp indicating the time
-     * when this conference has become idle(we can measure how long is it).
-     * -1 is returned if this conference is considered active.
-     *
+     * Return the time this conference was created.
      */
-    public long getIdleTimestamp()
+    public Instant getCreationTime()
     {
-        return idleTimestamp;
+        return creationTime;
+    }
+
+    public boolean hasHadAtLeastOneParticipant()
+    {
+        return hasHadAtLeastOneParticipant;
     }
 
     /**
@@ -2364,8 +2210,7 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Returns <tt>OperationSetJingle</tt> for the XMPP connection used in this
-     * <tt>JitsiMeetConference</tt> instance.
+     * Returns <tt>OperationSetJingle</tt> for the XMPP connection used in this <tt>JitsiMeetConference</tt> instance.
      */
     public OperationSetJingle getJingle()
     {
@@ -2382,32 +2227,24 @@ public class JitsiMeetConferenceImpl
 
     /**
      * Handles mute request sent from participants.
-     * @param fromJid MUC jid of the participant that requested mute status
-     *                change.
-     * @param toBeMutedJid MUC jid of the participant whose mute status will be
-     *                     changed(eventually).
+     * @param fromJid MUC jid of the participant that requested mute status change.
+     * @param toBeMutedJid MUC jid of the participant whose mute status will be changed (eventually).
      * @param doMute the new audio mute status to set.
      * @return <tt>true</tt> if status has been set successfully.
      */
-    boolean handleMuteRequest(Jid fromJid,
-                              Jid toBeMutedJid,
-                              boolean doMute)
+    public boolean handleMuteRequest(Jid fromJid, Jid toBeMutedJid, boolean doMute)
     {
         Participant principal = findParticipantForRoomJid(fromJid);
         if (principal == null)
         {
-            logger.warn(
-                "Failed to perform mute operation - " + fromJid
-                    +" not exists in the conference.");
+            logger.warn("Failed to perform mute operation - " + fromJid +" not exists in the conference.");
             return false;
         }
         // Only moderators can mute others
         if (!fromJid.equals(toBeMutedJid)
-            && ChatRoomMemberRole.MODERATOR.compareTo(
-                principal.getChatMember().getRole()) < 0)
+            && ChatRoomMemberRole.MODERATOR.compareTo(principal.getChatMember().getRole()) < 0)
         {
-            logger.warn(
-                "Permission denied for mute operation from " + fromJid);
+            logger.warn("Permission denied for mute operation from " + fromJid);
             return false;
         }
 
@@ -2429,8 +2266,7 @@ public class JitsiMeetConferenceImpl
             && participant.isSipGateway()
             && !participant.hasAudioMuteSupport())
         {
-            logger.warn("Blocking mute request to jigasi. " +
-                "Muting SIP participants is disabled.");
+            logger.warn("Blocking mute request to jigasi. Muting SIP participants is disabled.");
             return false;
         }
 
@@ -2441,18 +2277,14 @@ public class JitsiMeetConferenceImpl
             return false;
         }
 
-        logger.info(
-            "Will " + (doMute ? "mute" : "unmute")
-                + " " + toBeMutedJid + " on behalf of " + fromJid);
+        logger.info("Will " + (doMute ? "mute" : "unmute") + " " + toBeMutedJid + " on behalf of " + fromJid);
 
         BridgeSession bridgeSession = findBridgeSession(participant);
-        ColibriConferenceIQ participantChannels
-            = participant.getColibriChannelsInfo();
+        ColibriConferenceIQ participantChannels = participant.getColibriChannelsInfo();
         boolean succeeded
             = bridgeSession != null
                     && participantChannels != null
-                    && bridgeSession.colibriConference.muteParticipant(
-                            participantChannels, doMute);
+                    && bridgeSession.colibriConference.muteParticipant(participantChannels, doMute);
 
         if (succeeded)
         {
@@ -2481,28 +2313,6 @@ public class JitsiMeetConferenceImpl
         return gid;
     }
 
-    @Override
-    public void handleEvent(Event event)
-    {
-        if (!(event instanceof BridgeEvent))
-        {
-            logger.error("Unexpected event type: " + event);
-            return;
-        }
-
-        BridgeEvent bridgeEvent = (BridgeEvent) event;
-        Jid bridgeJid = bridgeEvent.getBridgeJid();
-        switch (event.getTopic())
-        {
-        case BridgeEvent.BRIDGE_DOWN:
-            onBridgeDown(bridgeJid);
-            break;
-        case BridgeEvent.BRIDGE_UP:
-            onBridgeUp(bridgeJid);
-            break;
-        }
-    }
-
     private void onBridgeUp(Jid bridgeJid)
     {
         // Check if we're not shutting down
@@ -2515,13 +2325,9 @@ public class JitsiMeetConferenceImpl
         // participants to another one. Here we should re-invite everyone if
         // the conference is not running (e.g. there was a single bridge and
         // it failed, then in was brought up).
-        if (chatRoom != null && checkMinParticipants()
-                && bridges.isEmpty())
+        if (chatRoom != null && checkMinParticipants() && bridges.isEmpty())
         {
-            logger.info("New bridge available: " + bridgeJid
-                        + " will try to restart: " + getRoomName());
-
-            logger.warn("Restarting the conference for room: " + getRoomName());
+            logger.info("New bridge available: " + bridgeJid + " will try to restart: " + getRoomName());
 
             synchronized (participantLock)
             {
@@ -2548,30 +2354,45 @@ public class JitsiMeetConferenceImpl
      */
     void onBridgeDown(Jid bridgeJid)
     {
-        List<Participant> participantsToReinvite = Collections.emptyList();
+        onMultipleBridgesDown(Collections.singleton(bridgeJid));
+    }
+
+    /**
+     * Handles the case of some of the bridges in the conference becoming non-operational.
+     * @param bridgeJids the JIDs of the bridges that are non-operational.
+     */
+    private void onMultipleBridgesDown(Set<Jid> bridgeJids)
+    {
+        List<Participant> participantsToReinvite = new ArrayList<>();
 
         synchronized (bridges)
         {
-            BridgeSession bridgeSession = findBridgeSession(bridgeJid);
-            if (bridgeSession != null)
+            bridgeJids.forEach(bridgeJid ->
             {
-                logger.error("One of our bridges failed: " + bridgeJid);
+                BridgeSession bridgeSession = findBridgeSession(bridgeJid);
+                if (bridgeSession != null)
+                {
+                    logger.error("One of our bridges failed: " + bridgeJid);
 
-                // Note: the Jingle sessions are still alive, we'll just
-                // (try to) move to a new bridge and send transport-replace.
-                participantsToReinvite = bridgeSession.terminateAll();
+                    // Note: the Jingle sessions are still alive, we'll just
+                    // (try to) move to a new bridge and send transport-replace.
+                    participantsToReinvite.addAll(bridgeSession.terminateAll());
 
-                bridges.remove(bridgeSession);
-                setConferenceProperty(
+                    bridges.remove(bridgeSession);
+                    listener.bridgeRemoved();
+                }
+            });
+
+            setConferenceProperty(
                     ConferenceProperties.KEY_BRIDGE_COUNT,
                     Integer.toString(bridges.size()));
 
-                updateOctoRelays();
-            }
+            updateOctoRelays();
         }
 
         if (!participantsToReinvite.isEmpty())
         {
+            listener.participantsMoved(participantsToReinvite.size());
             reInviteParticipants(participantsToReinvite);
         }
     }
@@ -2619,33 +2440,15 @@ public class JitsiMeetConferenceImpl
     /**
      * A method to be called by {@link AbstractChannelAllocator} just after it
      * has created a new Colibri conference on the JVB.
-     * @param colibriConference the {@link ColibriConference} instance which has
-     * just allocated a conference on the bridge.
-     * @param videobridgeJid the JID of the JVB where given
      */
-    public void onColibriConferenceAllocated(
-            ColibriConference    colibriConference,
-            Jid videobridgeJid)
+    void onColibriConferenceAllocated()
     {
-        // TODO: do we need this event?
-        EventAdmin eventAdmin = FocusBundleActivator.getEventAdmin();
-        if (eventAdmin != null)
-        {
-            eventAdmin.postEvent(
-                    EventFactory.conferenceRoom(
-                            colibriConference.getConferenceId(),
-                            roomName,
-                            String.valueOf(getId()),
-                            videobridgeJid));
-        }
-
         // Remove "bridge not available" from Jicofo's presence
         // There is no check if it was ever added, but should be harmless
         ChatRoom chatRoom = this.chatRoom;
         if (meetTools != null && chatRoom != null)
         {
-            meetTools.removePresenceExtension(
-                    chatRoom, new BridgeNotAvailablePacketExt());
+            meetTools.removePresenceExtension(chatRoom, new BridgeNotAvailablePacketExt());
         }
     }
 
@@ -2669,13 +2472,13 @@ public class JitsiMeetConferenceImpl
      */
     private String createSharedDocumentName()
     {
-        if (config.useRoomAsSharedDocName())
+        if (ConferenceConfig.config.useRandomSharedDocumentName())
         {
-            return roomName.getLocalpart().toString();
+            return UUID.randomUUID().toString().replaceAll("-", "");
         }
         else
         {
-            return UUID.randomUUID().toString().replaceAll("-", "");
+            return roomName.getLocalpart().toString();
         }
     }
 
@@ -2705,27 +2508,7 @@ public class JitsiMeetConferenceImpl
         {
             for (Participant participant : participants)
             {
-                BridgeSession session = participant.getBridgeSession();
-                participant.terminateBridgeSession();
-
-                // Expire the OctoEndpoints for this participant on other
-                // bridges.
-                if (session != null)
-                {
-                    MediaSourceMap removedSources = participant.getSourcesCopy();
-                    MediaSourceGroupMap removedGroups = participant.getSourceGroupsCopy();
-
-                    // Locking participantLock and the bridges is okay (or at
-                    // least used elsewhere).
-                    synchronized (bridges)
-                    {
-                        operationalBridges()
-                                .filter(bridge -> !bridge.equals(session))
-                                .forEach(
-                                    bridge -> bridge.removeSourcesFromOcto(
-                                            removedSources, removedGroups));
-                    }
-                }
+                terminateParticipantBridgeSession(participant);
             }
             for (Participant participant : participants)
             {
@@ -2737,6 +2520,33 @@ public class JitsiMeetConferenceImpl
         }
     }
 
+    private BridgeSession terminateParticipantBridgeSession(@NotNull Participant participant)
+    {
+        BridgeSession session = participant.getBridgeSession();
+        participant.terminateBridgeSession();
+
+        // Expire the OctoEndpoints for this participant on other
+        // bridges.
+        if (session != null)
+        {
+            MediaSourceMap removedSources = participant.getSourcesCopy();
+            MediaSourceGroupMap removedGroups = participant.getSourceGroupsCopy();
+
+            // Locking participantLock and the bridges is okay (or at
+            // least used elsewhere).
+            synchronized (bridges)
+            {
+                operationalBridges()
+                    .filter(bridge -> !bridge.equals(session))
+                    .forEach(
+                        bridge -> bridge.removeSourcesFromOcto(
+                            removedSources, removedGroups));
+            }
+        }
+
+        return session;
+    }
+
     /**
      * (Re)schedules {@link SinglePersonTimeout}.
      */
@@ -2746,15 +2556,11 @@ public class JitsiMeetConferenceImpl
         {
             cancelSingleParticipantTimeout();
 
-            long timeout = globalConfig.getSingleParticipantTimeout();
+            long timeout = ConferenceConfig.config.getSingleParticipantTimeout().toMillis();
 
-            singleParticipantTout
-                = executor.schedule(
-                        new SinglePersonTimeout(),
-                        timeout, TimeUnit.MILLISECONDS);
+            singleParticipantTout = executor.schedule(new SinglePersonTimeout(), timeout, TimeUnit.MILLISECONDS);
 
-            logger.debug(
-                    "Scheduled single person timeout for " + getRoomName());
+            logger.debug("Scheduled single person timeout for " + getRoomName());
         }
     }
 
@@ -2767,66 +2573,11 @@ public class JitsiMeetConferenceImpl
         {
             // This log is printed also when it's executed by the timeout thread
             // itself
-            logger.debug(
-                "Cancelling single person timeout in room: " + getRoomName());
+            logger.debug("Cancelling single person timeout in room: " + getRoomName());
 
             singleParticipantTout.cancel(false);
             singleParticipantTout = null;
         }
-    }
-
-    /**
-     * The task is scheduled with some delay when we end up with single
-     * <tt>Participant</tt> in the room to terminate its media session. There
-     * is no point in streaming media to the videobridge and using
-     * the bandwidth when nobody is receiving it.
-     */
-    private class SinglePersonTimeout
-        implements Runnable
-    {
-        @Override
-        public void run()
-        {
-            synchronized (participantLock)
-            {
-                if (participants.size() == 1)
-                {
-                    Participant p = participants.get(0);
-
-                    logger.info("Timing out single participant: " + p.getMucJid());
-
-                    terminateParticipant(
-                            p,
-                            Reason.EXPIRED,
-                            "Idle session timeout",
-                            /* send session-terminate */ true);
-
-                    disposeConference();
-                }
-                else
-                {
-                    logger.error("Should never execute if more than 1 participant? " + getRoomName());
-                }
-                singleParticipantTout = null;
-            }
-        }
-    }
-
-    /**
-     * Returns the COLIBRI conference ID of one of the bridges used by this
-     * conference.
-     * TODO: remove this (it is only used for testing)
-     */
-    public String getJvbConferenceId()
-    {
-        for (BridgeSession bridgeSession : bridges)
-        {
-            if (bridgeSession != null)
-            {
-                return bridgeSession.colibriConference.getConferenceId();
-            }
-        }
-        return null;
     }
 
     /**
@@ -2850,6 +2601,46 @@ public class JitsiMeetConferenceImpl
         return bridges;
     }
 
+    @Override
+    public boolean includeInStatistics()
+    {
+        return includeInStatistics;
+    }
+
+    protected FocusManager getFocusManager()
+    {
+        return ServiceUtils2.getService(FocusBundleActivator.bundleContext, FocusManager.class);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public JibriSessionStats getJibriSessionStats()
+    {
+        List<JibriSession> sessions = new ArrayList<>();
+
+        if (jibriRecorder != null)
+        {
+            sessions.addAll(jibriRecorder.getJibriSessions());
+        }
+
+        if  (jibriSipGateway != null)
+        {
+            sessions.addAll(jibriSipGateway.getJibriSessions());
+        }
+
+        return new JibriSessionStats(sessions);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String toString()
+    {
+        return String.format("JitsiMeetConferenceImpl[gid=%d, name=%s]", gid, getRoomName().toString());
+    }
 
     /**
      * The interface used to listen for conference events.
@@ -2861,6 +2652,28 @@ public class JitsiMeetConferenceImpl
          * @param conference the conference instance that has ended.
          */
         void conferenceEnded(JitsiMeetConferenceImpl conference);
+
+        /**
+         * {@code count} participants were moved away from a failed bridge.
+         *
+         * @param count the number of participants that were moved.
+         */
+        void participantsMoved(int count);
+
+        /**
+         * A participant reported that its ICE connection to the bridge failed.
+         */
+        void participantIceFailed();
+
+        /**
+         * A participant requested to be re-invited via session-terminate.
+         */
+        void participantRequestedRestart();
+
+        /**
+         * A bridge was removed from the conference because it was non-operational.
+         */
+        void bridgeRemoved();
     }
 
     /**
@@ -2886,9 +2699,7 @@ public class JitsiMeetConferenceImpl
          * processing the first notification and any following ones should be
          * discarded.
          */
-        final String id
-            = JitsiMeetConferenceImpl.this.gid
-                    + "_" +Integer.toHexString(RANDOM.nextInt(0x1_000000));
+        final String id = JitsiMeetConferenceImpl.this.gid + "_" +Integer.toHexString(RANDOM.nextInt(0x1_000000));
 
         /**
          * The list of participants in the conference which use this
@@ -2920,11 +2731,9 @@ public class JitsiMeetConferenceImpl
          * {@link BridgeSession} instance is to represent.
          */
         BridgeSession(Bridge bridge)
-                throws XmppStringprepException
         {
             this.bridge = Objects.requireNonNull(bridge, "bridge");
-            this.colibriConference
-                = createNewColibriConference(bridge.getJid());
+            this.colibriConference = createNewColibriConference(bridge.getJid());
         }
 
         private void addParticipant(Participant participant)
@@ -2939,8 +2748,7 @@ public class JitsiMeetConferenceImpl
          */
         private void dispose()
         {
-            // We will not expire channels if the bridge is faulty or
-            // when our connection is down
+            // We will not expire channels if the bridge is faulty or when our connection is down.
             if (!hasFailed && protocolProviderHandler.isRegistered())
             {
                 colibriConference.expireConference();
@@ -2956,7 +2764,7 @@ public class JitsiMeetConferenceImpl
 
         /**
          * Expires the COLIBRI channels (via
-         * {@link #terminate(AbstractParticipant, boolean)}) for all
+         * {@link Participant#terminateBridgeSession()}) for all
          * participants.
          * @return the list of participants which were removed from
          * {@link #participants} as a result of this call (does not include
@@ -2983,14 +2791,11 @@ public class JitsiMeetConferenceImpl
         }
 
         /**
-         * Expires the COLIBRI channels allocated for a specific
-         * {@link Participant} and removes the participant from
+         * Expires the COLIBRI channels allocated for a specific {@link Participant} and removes the participant from
          * {@link #participants}.
-         * @param participant the {@link Participant} for which to expire the
-         * COLIBRI channels.
-         * @return {@code true} if the participant was a member of
-         * {@link #participants} and was removed as a result of this call, and
-         * {@code false} otherwise.
+         * @param participant the {@link Participant} for which to expire the COLIBRI channels.
+         * @return {@code true} if the participant was a member of {@link #participants} and was removed as a result of
+         * this call, and {@code false} otherwise.
          */
         public boolean terminate(AbstractParticipant participant)
         {
@@ -3104,9 +2909,7 @@ public class JitsiMeetConferenceImpl
          * @param sources the sources to add.
          * @param sourceGroups the source groups to add.
          */
-        private void addSourcesToOcto(
-            MediaSourceMap sources,
-            MediaSourceGroupMap sourceGroups)
+        private void addSourcesToOcto(MediaSourceMap sources, MediaSourceGroupMap sourceGroups)
         {
            OctoParticipant octoParticipant = getOctoParticipant();
 
@@ -3114,8 +2917,7 @@ public class JitsiMeetConferenceImpl
            {
                if (octoParticipant.isSessionEstablished())
                {
-                   octoParticipant
-                       .addSourcesAndGroups(sources, sourceGroups);
+                   octoParticipant.addSourcesAndGroups(sources, sourceGroups);
                    updateColibriOctoChannels(octoParticipant);
                }
                else
@@ -3130,12 +2932,8 @@ public class JitsiMeetConferenceImpl
 
         /**
          * Removes sources and source groups
-         * @param sources
-         * @param sourceGroups
          */
-        private void removeSourcesFromOcto(
-            MediaSourceMap sources,
-            MediaSourceGroupMap sourceGroups)
+        private void removeSourcesFromOcto(MediaSourceMap sources, MediaSourceGroupMap sourceGroups)
         {
             OctoParticipant octoParticipant = this.octoParticipant;
             if (octoParticipant != null)
@@ -3152,8 +2950,7 @@ public class JitsiMeetConferenceImpl
                     else
                     {
                         octoParticipant.scheduleSourcesToRemove(sources);
-                        octoParticipant
-                            .scheduleSourceGroupsToRemove(sourceGroups);
+                        octoParticipant.scheduleSourceGroupsToRemove(sourceGroups);
                     }
                 }
             }
@@ -3171,8 +2968,7 @@ public class JitsiMeetConferenceImpl
 
             if (logger.isDebugEnabled())
             {
-                logger.debug(
-                    "Updating Octo relays for " + bridge + " in " +
+                logger.debug("Updating Octo relays for " + bridge + " in " +
                         JitsiMeetConferenceImpl.this + " to " + remoteRelays);
             }
 
@@ -3194,21 +2990,17 @@ public class JitsiMeetConferenceImpl
          */
         private OctoParticipant createOctoParticipant(List<String> relays)
         {
-            logger.info(
-                "Creating an Octo participant for " + bridge + " in " +
-                    JitsiMeetConferenceImpl.this);
+            logger.info("Creating an Octo participant for " + bridge + " in " + JitsiMeetConferenceImpl.this);
 
-            OctoParticipant octoParticipant
-                = new OctoParticipant(JitsiMeetConferenceImpl.this, relays);
+            OctoParticipant octoParticipant = new OctoParticipant(JitsiMeetConferenceImpl.this, relays);
 
-            MediaSourceMap remoteSources = getAllSources(participants);
-            MediaSourceGroupMap remoteGroups = getAllSourceGroups(participants);
+            MediaSourceMap remoteSources = getAllSources(participants, true);
+            MediaSourceGroupMap remoteGroups = getAllSourceGroups(participants, true);
 
             octoParticipant.addSourcesAndGroups(remoteSources, remoteGroups);
 
             OctoChannelAllocator channelAllocator
-                = new OctoChannelAllocator(
-                    JitsiMeetConferenceImpl.this, this, octoParticipant);
+                = new OctoChannelAllocator(JitsiMeetConferenceImpl.this, this, octoParticipant);
             octoParticipant.setChannelAllocator(channelAllocator);
 
             FocusBundleActivator.getSharedThreadPool().submit(channelAllocator);
@@ -3227,48 +3019,55 @@ public class JitsiMeetConferenceImpl
         }
     }
 
-    @Override
-    public boolean includeInStatistics()
-    {
-        return includeInStatistics;
-    }
-
-    protected FocusManager getFocusManager()
-    {
-        return ServiceUtils2.getService(FocusBundleActivator.bundleContext, FocusManager.class);
-    }
-
     /**
-     * {@inheritDoc}
+     * The task is scheduled with some delay when we end up with single
+     * <tt>Participant</tt> in the room to terminate its media session. There
+     * is no point in streaming media to the videobridge and using
+     * the bandwidth when nobody is receiving it.
      */
-    @Override
-    public JibriSessionStats getJibriSessionStats()
+    private class SinglePersonTimeout
+            implements Runnable
     {
-        List<JibriSession> sessions = new ArrayList<>();
-
-        if (jibriRecorder != null)
+        @Override
+        public void run()
         {
-            sessions.addAll(jibriRecorder.getJibriSessions());
+            synchronized (participantLock)
+            {
+                if (participants.size() == 1)
+                {
+                    Participant p = participants.get(0);
+
+                    logger.info("Timing out single participant: " + p.getMucJid());
+
+                    terminateParticipant(
+                            p,
+                            Reason.EXPIRED,
+                            "Idle session timeout",
+                            /* send session-terminate */ true);
+
+                    disposeConference();
+                }
+                else
+                {
+                    logger.error("Should never execute if more than 1 participant? " + getRoomName());
+                }
+                singleParticipantTout = null;
+            }
+        }
+    }
+
+    private class BridgeSelectorEventHandler implements BridgeSelector.EventHandler
+    {
+        @Override
+        public void bridgeRemoved(Bridge bridge)
+        {
+            onBridgeDown(bridge.getJid());
         }
 
-        if  (jibriSipGateway != null)
+        @Override
+        public void bridgeAdded(Bridge bridge)
         {
-            sessions.addAll(jibriSipGateway.getJibriSessions());
+            onBridgeUp(bridge.getJid());
         }
-
-        return new JibriSessionStats(sessions);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public String toString()
-    {
-        return
-            String.format(
-                    "JitsiMeetConferenceImpl[gid=%d, name=%s]",
-                    gid,
-                    getRoomName().toString());
     }
 }
