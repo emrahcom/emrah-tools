@@ -1,4 +1,3 @@
-
 // mute-unmute-XX - created AbstractUnmuteButton component
 
 import {
@@ -42,12 +41,11 @@ export type Props = AbstractButtonProps & {
  * An abstract remote video menu button which mutes the remote participant.
  */
 export default class AbstractUnmuteButton extends AbstractButton<Props, *> {
-
-    // change values of variables
     accessibilityLabel = 'toolbar.accessibilityLabel.remoteMute';
     icon = IconMicrophone;
     label = 'videothumbnail.domute';
     toggledLabel = 'videothumbnail.muted';
+
     /**
      * Handles clicking / pressing the button, and mutes the participant.
      *
