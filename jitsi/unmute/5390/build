@@ -1,0 +1,198 @@
+#!/bin/bash
+set -e
+
+
+# -----------------------------------------------------------------------------
+# trap on exit
+# -----------------------------------------------------------------------------
+function on_exit {
+    if [[ "$COMPLETED" != true ]]; then
+        echo -e "\nSomething went wrong. Not completed!"
+        exit 1
+    else
+        echo -e "\nCompleted successfully!"
+        exit 0
+    fi
+}
+
+COMPLETED=false
+trap on_exit EXIT
+
+
+# -----------------------------------------------------------------------------
+# ENVIRONMENT
+# -----------------------------------------------------------------------------
+echo
+echo "------------------------ ENVIRONMENT -------------------------"
+
+TAG=5390
+GITDIR="https://raw.githubusercontent.com/emrahcom/emrah-tools/main/jitsi/unmute/$TAG"
+BASEDIR=$(pwd)
+
+
+# -----------------------------------------------------------------------------
+# check
+# -----------------------------------------------------------------------------
+echo
+echo "--------------------------- CHECK ----------------------------"
+
+if [[ "$(whoami)" != "root" ]]; then
+    echo "run as root"
+fi
+
+
+# -----------------------------------------------------------------------------
+# packages
+# -----------------------------------------------------------------------------
+echo
+echo "-------------------------- PACKAGES --------------------------"
+
+apt-get -y --allow-releaseinfo-change update
+apt-get -y install curl wget gnupg
+
+curl -s https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add -
+echo "deb https://deb.nodesource.com/node_14.x buster main" > \
+    /etc/apt/sources.list.d/nodesource.list
+
+apt-get -y --allow-releaseinfo-change update
+apt-get -y install git build-essential
+apt-get -y install maven nodejs
+
+mvn --version
+node --version
+npm --version
+
+
+# -----------------------------------------------------------------------------
+# repo
+# -----------------------------------------------------------------------------
+echo
+echo "---------------------------- REPO ----------------------------"
+
+mkdir -p dev
+
+
+# jicofo
+echo -e "\n>>> jicofo\n"
+
+if [[ ! -d "dev/jicofo" ]]; then
+    git clone -b master https://github.com/jitsi/jicofo.git dev/jicofo
+fi
+
+cd dev/jicofo
+git checkout master -f
+git -c user.name=jitsi-dev -c user.email=jitsi-dev@jitsi.loc stash push --all
+git pull
+git branch -D $TAG || true
+git checkout jitsi-meet_$TAG
+git checkout -b $TAG
+
+
+# lib-jitsi-meet
+echo -e "\n>>> lib-jitsi-meet\n"
+
+cd $BASEDIR
+if [[ ! -d "dev/lib-jitsi-meet" ]]; then
+    git clone -b master https://github.com/jitsi/lib-jitsi-meet.git \
+        dev/lib-jitsi-meet
+fi
+
+cd dev/lib-jitsi-meet
+git checkout master -f
+git -c user.name=jitsi-dev -c user.email=jitsi-dev@jitsi.loc stash push --all
+git pull
+git branch -D $TAG || true
+git checkout jitsi-meet_$TAG
+git checkout -b $TAG
+
+
+# jitsi-meet
+echo -e "\n>>> jitsi-meet\n"
+
+cd $BASEDIR
+if [[ ! -d "dev/jitsi-meet" ]]; then
+    git clone -b master https://github.com/jitsi/jitsi-meet.git dev/jitsi-meet
+fi
+
+cd dev/jitsi-meet
+git checkout master -f
+git -c user.name=jitsi-dev -c user.email=jitsi-dev@jitsi.loc stash push --all
+git pull
+git branch -D $TAG || true
+git checkout jitsi-meet_$TAG
+git checkout -b $TAG
+
+
+# -----------------------------------------------------------------------------
+# jicofo
+# -----------------------------------------------------------------------------
+echo
+echo "--------------------------- JICOFO ---------------------------"
+
+cd $BASEDIR/dev/jicofo
+wget -O src/main/java/org/jitsi/jicofo/JitsiMeetConferenceImpl.java \
+    $GITDIR/jicofo/src/main/java/org/jitsi/jicofo/JitsiMeetConferenceImpl.java
+
+mvn package -DskipTests -Dassembly.skipAssembly=false
+mvn install
+
+
+# -----------------------------------------------------------------------------
+# lib-jitsi-meet
+# -----------------------------------------------------------------------------
+echo
+echo "----------------------- LIB-JITSI-MEET -----------------------"
+
+cd $BASEDIR/dev/lib-jitsi-meet
+npm update
+
+wget -O JitsiConference.js $GITDIR/lib-jitsi-meet/JitsiConference.js
+wget -O JitsiConferenceEventManager.js \
+    $GITDIR/lib-jitsi-meet/JitsiConferenceEventManager.js
+wget -O modules/xmpp/ChatRoom.js \
+    $GITDIR/lib-jitsi-meet/modules/xmpp/ChatRoom.js
+wget -O service/xmpp/XMPPEvents.js \
+    $GITDIR/lib-jitsi-meet/service/xmpp/XMPPEvents.js
+wget -O service/statistics/AnalyticsEvents.js \
+    $GITDIR/lib-jitsi-meet/service/statistics/AnalyticsEvents.js
+
+
+# -----------------------------------------------------------------------------
+# jitsi-meet
+# -----------------------------------------------------------------------------
+echo
+echo "------------------------- JITSI-MEET -------------------------"
+
+cd $BASEDIR/dev/jitsi-meet
+npm install ../lib-jitsi-meet
+npm update
+
+wget -O react/features/base/participants/actionTypes.js \
+    $GITDIR/jitsi-meet/react/features/base/participants/actionTypes.js
+wget -O react/features/base/participants/actions.js \
+    $GITDIR/jitsi-meet/react/features/base/participants/actions.js
+wget -O react/features/base/participants/middleware.js \
+    $GITDIR/jitsi-meet/react/features/base/participants/middleware.js
+wget -O react/features/remote-video-menu/actions.js \
+    $GITDIR/jitsi-meet/react/features/remote-video-menu/actions.js
+wget -O react/features/remote-video-menu/components/AbstractUnmuteButton.js \
+    $GITDIR/jitsi-meet/react/features/remote-video-menu/components/AbstractUnmuteButton.js
+wget -O react/features/remote-video-menu/components/AbstractUnmuteRemoteParticipantDialog.js \
+    $GITDIR/jitsi-meet/react/features/remote-video-menu/components/AbstractUnmuteRemoteParticipantDialog.js
+wget -O react/features/remote-video-menu/components/web/UnmuteButton.js \
+    $GITDIR/jitsi-meet/react/features/remote-video-menu/components/web/UnmuteButton.js
+wget -O react/features/remote-video-menu/components/web/UnmuteRemoteParticipantDialog.js \
+    $GITDIR/jitsi-meet/react/features/remote-video-menu/components/web/UnmuteRemoteParticipantDialog.js
+wget -O react/features/remote-video-menu/components/web/RemoteVideoMenuTriggerButton.js \
+    $GITDIR/jitsi-meet/react/features/remote-video-menu/components/web/RemoteVideoMenuTriggerButton.js
+wget -O react/features/remote-video-menu/components/web/index.js \
+    $GITDIR/jitsi-meet/react/features/remote-video-menu/components/web/index.js
+wget -O lang/main.json $GITDIR/jitsi-meet/lang/main.json
+
+make
+
+
+# -----------------------------------------------------------------------------
+# completed
+# -----------------------------------------------------------------------------
+COMPLETED=true
