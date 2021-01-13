@@ -145,6 +145,8 @@ JitsiConferenceEventManager.prototype.setupChatRoomListeners = function() {
     // send some analytics events
     chatRoom.addListener(XMPPEvents.MUC_JOINED,
         () => {
+            this.conference._onMucJoined();
+
             this.conference.isJvbConnectionInterrupted = false;
 
             // TODO: Move all of the 'connectionTimes' logic to its own module.
@@ -600,9 +602,9 @@ JitsiConferenceEventManager.prototype.removeXMPPListeners = function() {
     const conference = this.conference;
 
     conference.xmpp.caps.removeListener(
-        XMPPEvents.PARTCIPANT_FEATURES_CHANGED,
-        this.xmppListeners[XMPPEvents.PARTCIPANT_FEATURES_CHANGED]);
-    delete this.xmppListeners[XMPPEvents.PARTCIPANT_FEATURES_CHANGED];
+        XMPPEvents.PARTICIPANT_FEATURES_CHANGED,
+        this.xmppListeners[XMPPEvents.PARTICIPANT_FEATURES_CHANGED]);
+    delete this.xmppListeners[XMPPEvents.PARTICIPANT_FEATURES_CHANGED];
 
     Object.keys(this.xmppListeners).forEach(eventName => {
         conference.xmpp.removeListener(
@@ -619,23 +621,17 @@ JitsiConferenceEventManager.prototype.removeXMPPListeners = function() {
 JitsiConferenceEventManager.prototype.setupXMPPListeners = function() {
     const conference = this.conference;
 
-    const featuresChangedListener = from => {
-        const participant
-            = conference.getParticipantById(
-            Strophe.getResourceFromJid(from));
+    const featuresChangedListener = (from, features) => {
+        const participant = conference.getParticipantById(Strophe.getResourceFromJid(from));
 
         if (participant) {
-            conference.eventEmitter.emit(
-                JitsiConferenceEvents.PARTCIPANT_FEATURES_CHANGED,
-                participant);
+            participant._features = features;
+            conference.eventEmitter.emit(JitsiConferenceEvents.PARTCIPANT_FEATURES_CHANGED, participant);
         }
     };
 
-    conference.xmpp.caps.addListener(
-        XMPPEvents.PARTCIPANT_FEATURES_CHANGED,
-        featuresChangedListener);
-    this.xmppListeners[XMPPEvents.PARTCIPANT_FEATURES_CHANGED]
-        = featuresChangedListener;
+    conference.xmpp.caps.addListener(XMPPEvents.PARTICIPANT_FEATURES_CHANGED, featuresChangedListener);
+    this.xmppListeners[XMPPEvents.PARTICIPANT_FEATURES_CHANGED] = featuresChangedListener;
 
     this._addConferenceXMPPListener(
         XMPPEvents.CALL_INCOMING,
