@@ -9,8 +9,8 @@ As `root`
 
 ```bash
 cd
-wget -O build https://raw.githubusercontent.com/emrahcom/emrah-tools/main/jitsi/unmute/5390/build
-bash build
+wget -O build-5390 https://raw.githubusercontent.com/emrahcom/emrah-tools/main/jitsi/unmute/5390/build
+bash build-5390
 ```
 
 Check the `dev-output/5390` folder
