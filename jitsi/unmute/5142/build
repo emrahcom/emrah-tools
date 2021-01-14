@@ -193,6 +193,29 @@ make
 
 
 # -----------------------------------------------------------------------------
+# outputs
+# -----------------------------------------------------------------------------
+echo
+echo "------------------------- DEV OUTPUT -------------------------"
+
+cd $BASEDIR
+
+mkdir -p dev-output/$TAG/usr/share/jicofo
+cp dev/jicofo/target/jicofo-1.1-SNAPSHOT.jar \
+    dev-output/$TAG/usr/share/jicofo/jicofo.jar
+echo ">>> dev-output/$TAG/usr/share/jicofo/jicofo.jar"
+
+mkdir -p dev-output/$TAG/usr/share/jitsi-meet/libs
+cp dev/jitsi-meet/libs/app.bundle.min.js \
+    dev-output/$TAG/usr/share/jitsi-meet/libs/
+echo ">>> dev-output/$TAG/usr/share/jitsi-meet/libs/app.bundle.min.js"
+
+cp dev/jitsi-meet/libs/lib-jitsi-meet.min.js \
+    dev-output/$TAG/usr/share/jitsi-meet/libs/
+echo ">>> dev-output/$TAG/usr/share/jitsi-meet/libs/lib-jitsi-meet.min.js"
+
+
+# -----------------------------------------------------------------------------
 # completed
 # -----------------------------------------------------------------------------
 COMPLETED=true
