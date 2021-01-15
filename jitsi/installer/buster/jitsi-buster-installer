@@ -13,16 +13,29 @@ export COMMON_TMPL=https://raw.githubusercontent.com/emrahcom/emrah-buster-base/
 
 
 # -----------------------------------------------------------------------------
+# output format
+# -----------------------------------------------------------------------------
+out() {
+    printf "\n"
+
+    while IFS= read -r line; do
+        printf "\033[0;31m>>>\033[0m \033[0;33m%s\033[0m\n" "$line"
+    done
+}
+
+
+# -----------------------------------------------------------------------------
 # trap on exit
 # -----------------------------------------------------------------------------
 function on_exit {
-    echo
     if [[ "$COMPLETED" != true ]]; then
-        echo "Something went wrong. Not completed!"
+        out <<< "Something went wrong. Not completed!"
         exit 1
     else
-        echo "Installation Duration: $DURATION"
-        echo "Completed successfully!"
+        out <<EOF
+Installation Duration: $DURATION
+Completed successfully!
+EOF
         exit 0
     fi
 }
@@ -49,7 +62,7 @@ PUBLIC_IP=$(ip addr show $PUBLIC_INTERFACE | ack "$PUBLIC_INTERFACE$" | \
 clear
 
 # are you sure
-cat <<EOF
+out <<EOF
 This script can be harmful and will remove already installed Jitsi if exists.
 Don't use it on a working production server.
 Write YES (uppercase) and press enter if you are crazy!
@@ -57,8 +70,7 @@ EOF
 
 read answer
 if [[ "$answer" != "YES" ]]; then
-    cat <<EOF
-
+    out <<EOF
 Aborted! not approved, typed: $answer
 Recommendation: Use this script on a newly installed $DISTRO_NAME machine
 EOF
@@ -68,8 +80,7 @@ fi
 
 # whoami
 if [[ "$(whoami)" != "root" ]]; then
-    cat <<EOF
-
+    out <<EOF
 Aborted! Your are not the root user: $(whoami)
 Recommendation: Use the following command to be the 'root' user
 
@@ -81,8 +92,7 @@ fi
 # distro
 DISTRO=$(grep VERSION_CODENAME /etc/os-release | cut -d= -f2)
 if [[ "$DISTRO" != "$DISTRO_RELEASE" ]]; then
-    cat <<EOF
-
+    out <<EOF
 Aborted! Your distro is not $DISTRO_NAME $DISTRO_RELEASE
 Recommendation: Switch to a $DISTRO_NAME $DISTRO_RELEASE machine
 EOF
@@ -91,8 +101,7 @@ fi
 
 # jitsi host address
 if [[ -z "$JITSI_HOST" ]]; then
-    cat <<EOF
-
+    out <<EOF
 Aborted! Unknown Jitsi host address
 Recommendation: Set Jitsi host address according to the following command
   and try again
@@ -104,8 +113,7 @@ fi
 
 # jitsi fqdn
 if [[ -z "$(echo $JITSI_HOST | egrep -o '[a-zA-Z]')" ]]; then
-    cat <<EOF
-
+    out <<EOF
 Aborted! Jitsi host address is not FQDN: $JITSI_HOST
 Recommendation: Don't use an IP address, use a valid FQDN address
 EOF
@@ -114,8 +122,7 @@ fi
 
 # turn host address
 if [[ -z "$TURN_HOST" ]]; then
-    cat <<EOF
-
+    out <<EOF
 Aborted! Unknown TURN host address
 Recommendation: Set TURN host address according to the following command
   and try again
@@ -127,8 +134,7 @@ fi
 
 # turn fqdn
 if [[ -z "$(echo $TURN_HOST | egrep -o '[a-zA-Z]')" ]]; then
-    cat <<EOF
-
+    out <<EOF
 Aborted! TURN host address is not FQDN: $TURN_HOST
 Recommendation: Don't use an IP address, use a valid FQDN address
 EOF
@@ -137,8 +143,7 @@ fi
 
 # jitsi == turn
 if [[ "$JITSI_HOST" = "$TURN_HOST" ]]; then
-    cat <<EOF
-
+    out <<EOF
 Aborted! Jitsi host address and TURN host address are the same
 Recommendation: Use different addresses for Jitsi and TURN
 
@@ -175,9 +180,10 @@ for i in $(seq 3); do
     apt-get -y --allow-releaseinfo-change update && sleep 3 && break
 done
 
+apt-get $APT_PROXY_OPTION -y install apt-utils
 apt-get $APT_PROXY_OPTION -y dist-upgrade
 apt-get $APT_PROXY_OPTION -y install wget curl ca-certificates openssl
-apt-get $APT_PROXY_OPTION -y install apt-utils apt-transport-https gnupg
+apt-get $APT_PROXY_OPTION -y install apt-transport-https gnupg
 apt-get $APT_PROXY_OPTION -y install iputils-ping dnsutils
 apt-get $APT_PROXY_OPTION -y install tmux vim less ack jq rsync bzip2
 apt-get $APT_PROXY_OPTION -y install procps htop bmon
@@ -192,8 +198,7 @@ apt-get $APT_PROXY_OPTION -y install gcc git
 # external ip
 EXTERNAL_IP=$(dig -4 +short myip.opendns.com a @resolver1.opendns.com) || true
 if [[ -z "$EXTERNAL_IP" ]]; then
-    cat <<EOF
-
+    out <<EOF
 Aborted! The external IP not found
 Recommendation: Check if myip.opendns.com is is accessible
 EOF
@@ -208,8 +213,7 @@ EXTERNAL_IP=167.172.96.221
 # jitsi host A record
 IP=$(host $JITSI_HOST | grep "has address" | awk '{print $4}' || true)
 if [[ -z "$IP" ]]; then
-    cat <<EOF
-
+    out <<EOF
 Aborted! $JITSI_HOST is not resolvable
 Recommendation: Set DNS A record for $JITSI_HOST
 EOF
@@ -218,8 +222,7 @@ fi
 
 # jitsi ip == external ip
 if [[ "$IP" != "$EXTERNAL_IP" ]]; then
-    cat <<EOF
-
+    out <<EOF
 Aborted! $JITSI_HOST does not point to this server: $EXTERNAL_IP <> $IP
 Recommendation: Set $EXTERNAL_IP as $JITSI_HOST A record
 EOF
@@ -229,8 +232,7 @@ fi
 # turn host A record
 IP=$(host $TURN_HOST | grep "has address" | awk '{print $4}' || true)
 if [[ -z "$IP" ]]; then
-    cat <<EOF
-
+    out <<EOF
 Aborted! $TURN_HOST is not resolvable
 Recommendation: Set DNS CNAME or A record for $TURN_HOST
 EOF
@@ -239,8 +241,7 @@ fi
 
 # turn ip == external ip
 if [[ "$IP" != "$EXTERNAL_IP" ]]; then
-    cat <<EOF
-
+    out <<EOF
 Aborted! $TURN_HOST does not point to this server: $EXTERNAL_IP <> $IP
 Recommendation: Set $EXTERNAL_IP as $TURN_HOST A record
 EOF
