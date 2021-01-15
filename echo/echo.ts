@@ -11,39 +11,35 @@ const app: Server = serve({
 });
 
 // ----------------------------------------------------------------------------
-export async function parseQueryString(
-  req: ServerRequest,
-): Promise<URLSearchParams> {
-  try {
-    const qs = req.url.match("[?].*$");
-    if (!qs) throw new Error("no query string");
-
-    return new URLSearchParams(qs[0]);
-  } catch (error) {
-    return new URLSearchParams();
-  }
-}
-
-// ----------------------------------------------------------------------------
-export const ok = (req: ServerRequest, resBody: string) =>
+const ok = async (req: ServerRequest, resBody: string) =>
   req.respond({
     status: 200,
     body: resBody,
   });
 
 // ----------------------------------------------------------------------------
-export const forbidden = (req: ServerRequest) =>
+const forbidden = async (req: ServerRequest) =>
   req.respond({
     status: Status.Forbidden,
     body: "Forbidden",
   });
 
 // ----------------------------------------------------------------------------
-export const badRequest = (req: ServerRequest) =>
+const badRequest = async (req: ServerRequest) =>
   req.respond({
     status: Status.BadRequest,
     body: "BadRequest",
   });
+
+// ----------------------------------------------------------------------------
+async function parseQueryString(
+  req: ServerRequest,
+): Promise<URLSearchParams> {
+  const qs = req.url.match("[?].*$");
+  if (!qs) throw new Error("no query string");
+
+  return new URLSearchParams(qs[0]);
+}
 
 // ----------------------------------------------------------------------------
 async function sendEcho(
@@ -72,17 +68,19 @@ async function sendEcho(
 async function main() {
   for await (const req of app) {
     if (req.method === "GET") {
-      const qs = await parseQueryString(req);
-      const res = await sendEcho(req, qs).then(() => {
-        ok(req, "ok");
-      }).catch(() => {
-        badRequest(req);
-      });
+      await parseQueryString(req)
+        .then(async (qs) => await sendEcho(req, qs))
+        .then(async () => await ok(req, "ok"))
+        .catch(async (e) => await badRequest(req))
+        .catch(() => {
+          req.conn.close();
+        })
+        .catch(() => {});
 
       continue;
     }
 
-    forbidden(req);
+    await forbidden(req).catch(() => {});
   }
 }
 
