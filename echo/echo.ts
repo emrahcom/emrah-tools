@@ -27,7 +27,7 @@ class SubProcess extends Error {
 }
 
 // ----------------------------------------------------------------------------
-interface NcatArgs {
+interface EchoArgs {
   addr: string;
   port: number;
   proto: string;
@@ -81,7 +81,7 @@ async function parseQueryString(req: ServerRequest): Promise<URLSearchParams> {
 async function validateInput(
   req: ServerRequest,
   qs: URLSearchParams,
-): Promise<NcatArgs> {
+): Promise<EchoArgs> {
   //if (!req.headers.has("remote_ip")) throw new BadRequest("remote_ip not found");
   if (!qs.has("proto")) throw new BadRequest("proto not found");
   if (!qs.has("port")) throw new BadRequest("port not found");
@@ -100,7 +100,7 @@ async function validateInput(
   }
 
   return {
-    addr: "127.0.0.1",
+    addr: "192.168.1.1",
     port: Number(port),
     proto: proto,
     text: text,
@@ -108,20 +108,33 @@ async function validateInput(
 }
 
 // ----------------------------------------------------------------------------
-async function echo(nc: NcatArgs) {
-  if (nc.proto === "udp") console.log("udp");
+async function echo(ec: EchoArgs) {
+  let cmd: string;
+  if (ec.proto === "udp") {
+    cmd = `echo ${ec.text} | timeout 6 ncat -u ${ec.addr} ${ec.port}`;
+  } else if (ec.proto === "tcp") {
+    cmd = `echo ${ec.text} | timeout 6 ncat ${ec.addr} ${ec.port}`;
+  } else {
+    throw new Error("unsupported protocol");
+  }
 
-  const p = Deno.run({
-    cmd: ["echo", "xxx", "|", "grep", "x"],
+  const encoder = new TextEncoder();
+  const shell = Deno.run({
+    cmd: ["bash"],
+    stdin: "piped",
   });
-  console.log(await p.status());
+
+  await shell.stdin.write(encoder.encode(cmd));
+  await shell.stdin.close();
+  await shell.status();
+  shell.close();
 }
 
 // ----------------------------------------------------------------------------
 async function triggerEcho(req: ServerRequest) {
   parseQueryString(req)
     .then((qs) => validateInput(req, qs))
-    .then((nc) => echo(nc))
+    .then((ec) => echo(ec))
     .then(() => ok(req, "ok"))
     .catch((e) => {
       if (e.name === "BadRequest") badRequest(req);
