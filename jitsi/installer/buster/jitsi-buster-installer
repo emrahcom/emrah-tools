@@ -187,7 +187,7 @@ apt-get $APT_PROXY_OPTION -y install apt-transport-https gnupg
 apt-get $APT_PROXY_OPTION -y install iputils-ping dnsutils
 apt-get $APT_PROXY_OPTION -y install tmux vim less ack jq rsync bzip2
 apt-get $APT_PROXY_OPTION -y install procps htop bmon
-apt-get $APT_PROXY_OPTION -y install net-tools ngrep netcat-openbsd
+apt-get $APT_PROXY_OPTION -y install net-tools ngrep ncat
 apt-get $APT_PROXY_OPTION -y install ssl-cert certbot
 apt-get $APT_PROXY_OPTION -y install gcc git
 
