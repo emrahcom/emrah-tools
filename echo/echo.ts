@@ -11,76 +11,143 @@ const app: Server = serve({
 });
 
 // ----------------------------------------------------------------------------
-const ok = async (req: ServerRequest, resBody: string) =>
+class BadRequest extends Error {
+  constructor(...params: any) {
+    super(...params);
+    this.name = "BadRequest";
+  }
+}
+
+// ----------------------------------------------------------------------------
+class SubProcess extends Error {
+  constructor(...params: any) {
+    super(...params);
+    this.name = "SubProcess";
+  }
+}
+
+// ----------------------------------------------------------------------------
+interface NcatArgs {
+  addr: string;
+  port: number;
+  proto: string;
+  text: string;
+}
+
+// ----------------------------------------------------------------------------
+const ok = (req: ServerRequest, resBody: string) =>
   req.respond({
     status: 200,
     body: resBody,
   });
 
 // ----------------------------------------------------------------------------
-const forbidden = async (req: ServerRequest) =>
-  req.respond({
-    status: Status.Forbidden,
-    body: "Forbidden",
-  });
-
-// ----------------------------------------------------------------------------
-const badRequest = async (req: ServerRequest) =>
+const badRequest = (req: ServerRequest) =>
   req.respond({
     status: Status.BadRequest,
     body: "BadRequest",
   });
 
 // ----------------------------------------------------------------------------
-async function parseQueryString(
-  req: ServerRequest,
-): Promise<URLSearchParams> {
+const forbidden = (req: ServerRequest) =>
+  req.respond({
+    status: Status.Forbidden,
+    body: "Forbidden",
+  });
+
+// ----------------------------------------------------------------------------
+const internalServerError = (req: ServerRequest) =>
+  req.respond({
+    status: Status.InternalServerError,
+    body: "InternalServerError",
+  });
+
+// ----------------------------------------------------------------------------
+const notImplemented = (req: ServerRequest) =>
+  req.respond({
+    status: Status.NotImplemented,
+    body: "NotImplemented",
+  });
+
+// ----------------------------------------------------------------------------
+async function parseQueryString(req: ServerRequest): Promise<URLSearchParams> {
   const qs = req.url.match("[?].*$");
-  if (!qs) throw new Error("no query string");
+  if (!qs) throw new BadRequest("no query string");
 
   return new URLSearchParams(qs[0]);
 }
 
 // ----------------------------------------------------------------------------
-async function sendEcho(
+async function validateInput(
   req: ServerRequest,
   qs: URLSearchParams,
-): Promise<boolean> {
-  //if (!req.headers.has("remote_ip")) throw new Error("remote_ip not found");
-  if (!qs.has("proto")) throw new Error("proto not found");
-  if (!qs.has("port")) throw new Error("port not found");
-  if (!qs.has("text")) throw new Error("text not found");
+): Promise<NcatArgs> {
+  //if (!req.headers.has("remote_ip")) throw new BadRequest("remote_ip not found");
+  if (!qs.has("proto")) throw new BadRequest("proto not found");
+  if (!qs.has("port")) throw new BadRequest("port not found");
+  if (!qs.has("text")) throw new BadRequest("text not found");
 
   const proto = qs.get("proto");
   const port = qs.get("port");
   const text = qs.get("text");
 
-  if (!(proto === "tcp" || proto === "udp")) throw new Error("invalid proto");
-  if (!port || !port.match("^[0-9]+$")) throw new Error("invalid port");
+  if (!(proto === "tcp" || proto === "udp")) {
+    throw new BadRequest("invalid proto");
+  }
+  if (!port || !port.match("^[0-9]+$")) throw new BadRequest("invalid port");
   if (!text || !text.match("^[0-9a-zA-Z _-]+$")) {
-    throw new Error("invalid text");
+    throw new BadRequest("invalid text");
   }
 
-  return true;
+  return {
+    addr: "127.0.0.1",
+    port: Number(port),
+    proto: proto,
+    text: text,
+  };
+}
+
+// ----------------------------------------------------------------------------
+async function echo(nc: NcatArgs) {
+  if (nc.proto === "udp") console.log("udp");
+
+  const p = Deno.run({
+    cmd: ["echo", "xxx", "|", "grep", "x"],
+  });
+  console.log(await p.status());
+}
+
+// ----------------------------------------------------------------------------
+async function triggerEcho(req: ServerRequest) {
+  parseQueryString(req)
+    .then((qs) => validateInput(req, qs))
+    .then((nc) => echo(nc))
+    .then(() => ok(req, "ok"))
+    .catch((e) => {
+      if (e.name === "BadRequest") badRequest(req);
+      else if (e.name === "SubProcess") internalServerError(req);
+      else notImplemented(req);
+    })
+    .catch((e) => {
+      req.conn.close();
+    })
+    .catch(() => {});
+}
+
+// ----------------------------------------------------------------------------
+async function triggerReject(req: ServerRequest) {
+  forbidden(req)
+    .catch((e) => {
+      req.conn.close();
+    })
+    .catch(() => {});
 }
 
 // ----------------------------------------------------------------------------
 async function main() {
   for await (const req of app) {
-    if (req.method === "GET") {
-      await parseQueryString(req)
-        .then(async (qs) => await sendEcho(req, qs))
-        .then(async () => await ok(req, "ok"))
-        .catch(async (e) => await badRequest(req))
-        .catch(() => {
-          req.conn.close();
-        })
-        .catch(() => {});
-
-      continue;
-    }
-
-    await forbidden(req).catch(() => {});
+    if (req.method === "GET") triggerEcho(req);
+    else triggerReject(req);
   }
 }
 
