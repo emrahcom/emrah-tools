@@ -82,7 +82,12 @@ async function validateInput(
   req: ServerRequest,
   qs: URLSearchParams,
 ): Promise<EchoArgs> {
-  //if (!req.headers.has("remote_ip")) throw new BadRequest("remote_ip not found");
+  if (!req.headers.has("X-Forwarded-For")) {
+    throw new BadRequest("remote_ip not found");
+  }
+  const addr = req.headers.get("X-Forwarded-For");
+  if (!addr || !addr.match("^[0-9.]+$")) throw new BadRequest("invalid addr");
+
   if (!qs.has("proto")) throw new BadRequest("proto not found");
   if (!qs.has("port")) throw new BadRequest("port not found");
   if (!qs.has("text")) throw new BadRequest("text not found");
@@ -104,7 +109,7 @@ async function validateInput(
   if (text.length > 100) throw new BadRequest("very long text");
 
   return {
-    addr: "192.168.1.1",
+    addr: addr,
     port: nport,
     proto: proto,
     text: text,

@@ -1,0 +1,14 @@
+[Unit]
+Description=Echo Service
+After=network-online.target
+
+[Service]
+User=echo
+Group=echo
+ExecStart=/home/echo/app/echo.sh
+KillMode=control-group
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
