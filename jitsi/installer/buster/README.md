@@ -16,8 +16,8 @@ if you need a scalable clustered Jitsi system.
 ```bash
 wget -O jitsi-buster-installer https://raw.githubusercontent.com/emrahcom/emrah-tools/main/jitsi/installer/buster/jitsi-buster-installer
 
-export JITSI_HOST=jitsi.mydomain.com
-export TURN_HOST=turn.mydomain.com
+export JITSI_HOST=jitsi.yourdomain.com
+export TURN_HOST=turn.yourdomain.com
 
 bash jitsi-buster-installer
 ```
