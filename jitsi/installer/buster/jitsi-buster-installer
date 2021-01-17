@@ -102,6 +102,17 @@ EOF
     exit 1
 fi
 
+# memory
+out <<< "checking the total memory..."
+MEM=$(cat /proc/meminfo | grep MemTotal | egrep -o "[0-9]*")
+if [[ "$MEM" -lt 7800000 ]]; then
+    out <<EOF
+Aborted! Not enough memory: $MEM kB
+Recommendation: The total memory should be at least 8 GB
+EOF
+    exit 1
+fi
+
 # jitsi host address
 out <<< "checking Jitsi FQDN..."
 if [[ -z "$JITSI_HOST" ]]; then
