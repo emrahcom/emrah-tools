@@ -9,7 +9,9 @@ doc](https://github.com/emrahcom/emrah-buster-templates/blob/master/doc/jitsi_cl
 if you need a scalable clustered Jitsi system.
 
 ## Usage
-Run as `root`
+* Don't use it on a working production server
+* Run as `root`
+* Follow the recommendations
 
 ```bash
 wget -O jitsi-buster-installer https://raw.githubusercontent.com/emrahcom/emrah-tools/main/jitsi/installer/buster/jitsi-buster-installer
