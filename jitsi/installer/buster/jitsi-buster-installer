@@ -10,6 +10,7 @@ export DISTRO_NAME="Debian"
 export DISTRO_RELEASE="buster"
 export JITSI_TMPL=https://raw.githubusercontent.com/emrahcom/emrah-buster-templates/master/machines/eb-jitsi
 export COMMON_TMPL=https://raw.githubusercontent.com/emrahcom/emrah-buster-base/master/machines/common
+export CHECKMYPORT=https://checkmyport.emrah.com
 
 
 # -----------------------------------------------------------------------------
@@ -53,7 +54,7 @@ DEFAULT_ROUTE=$(ip route | egrep '^default ' | head -n1)
 PUBLIC_INTERFACE=${DEFAULT_ROUTE##*dev }
 PUBLIC_INTERFACE=${PUBLIC_INTERFACE/% */}
 PUBLIC_IP=$(ip addr show $PUBLIC_INTERFACE | ack "$PUBLIC_INTERFACE$" | \
-	    xargs | cut -d " " -f 2 | cut -d "/" -f1)
+            xargs | cut -d " " -f 2 | cut -d "/" -f1)
 
 
 # -----------------------------------------------------------------------------
@@ -79,6 +80,7 @@ fi
 
 
 # whoami
+out <<< "checking the user account..."
 if [[ "$(whoami)" != "root" ]]; then
     out <<EOF
 Aborted! Your are not the root user: $(whoami)
@@ -90,6 +92,7 @@ EOF
 fi
 
 # distro
+out <<< "checking the distro..."
 DISTRO=$(grep VERSION_CODENAME /etc/os-release | cut -d= -f2)
 if [[ "$DISTRO" != "$DISTRO_RELEASE" ]]; then
     out <<EOF
@@ -100,6 +103,7 @@ EOF
 fi
 
 # jitsi host address
+out <<< "checking Jitsi FQDN..."
 if [[ -z "$JITSI_HOST" ]]; then
     out <<EOF
 Aborted! Unknown Jitsi host address
@@ -121,6 +125,7 @@ EOF
 fi
 
 # turn host address
+out <<< "checking TURN FQDN..."
 if [[ -z "$TURN_HOST" ]]; then
     out <<EOF
 Aborted! Unknown TURN host address
@@ -157,6 +162,8 @@ fi
 # -----------------------------------------------------------------------------
 # remove the old installation if exists
 # -----------------------------------------------------------------------------
+out <<< "removing the old installation if exists..."
+
 apt-get -y purge "jitsi-*" || true
 apt-get -y purge prosody jicofo jitsi-videobridge2 || true
 apt-get -y purge nginx nginx-* coturn || true
@@ -176,6 +183,8 @@ rm -f  /etc/apt/sources.list.d/jitsi-stable.list
 # -----------------------------------------------------------------------------
 # base packages
 # -----------------------------------------------------------------------------
+out <<< "installing base packages..."
+
 for i in $(seq 3); do
     apt-get -y --allow-releaseinfo-change update && sleep 3 && break
 done
@@ -196,21 +205,18 @@ apt-get $APT_PROXY_OPTION -y install gcc git
 # environment check
 # -----------------------------------------------------------------------------
 # external ip
+out <<< "checking the external IP..."
 EXTERNAL_IP=$(dig -4 +short myip.opendns.com a @resolver1.opendns.com) || true
 if [[ -z "$EXTERNAL_IP" ]]; then
     out <<EOF
 Aborted! The external IP not found
-Recommendation: Check if myip.opendns.com is is accessible
+Recommendation: Check if myip.opendns.com is accessible
 EOF
     exit 1
 fi
 
-# !!!!!!!!!!!!!
-# DONT FORGET TO REMOVE
-# !!!!!!!!!!!!!
-EXTERNAL_IP=167.172.96.221
-
 # jitsi host A record
+out <<< "checking DNS record for $JITSI_HOST..."
 IP=$(host $JITSI_HOST | grep "has address" | awk '{print $4}' || true)
 if [[ -z "$IP" ]]; then
     out <<EOF
@@ -221,6 +227,7 @@ EOF
 fi
 
 # jitsi ip == external ip
+out <<< "checking $JITSI_HOST resolved IP..."
 if [[ "$IP" != "$EXTERNAL_IP" ]]; then
     out <<EOF
 Aborted! $JITSI_HOST does not point to this server: $EXTERNAL_IP <> $IP
@@ -230,6 +237,7 @@ EOF
 fi
 
 # turn host A record
+out <<< "checking DNS record for $TURN_HOST..."
 IP=$(host $TURN_HOST | grep "has address" | awk '{print $4}' || true)
 if [[ -z "$IP" ]]; then
     out <<EOF
@@ -240,6 +248,7 @@ EOF
 fi
 
 # turn ip == external ip
+out <<< "checking $TURN_HOST resolved IP..."
 if [[ "$IP" != "$EXTERNAL_IP" ]]; then
     out <<EOF
 Aborted! $TURN_HOST does not point to this server: $EXTERNAL_IP <> $IP
@@ -252,14 +261,51 @@ fi
 # -----------------------------------------------------------------------------
 # accessibility check
 # -----------------------------------------------------------------------------
+TEXT=$(openssl rand -hex 20)
+
+out <<< "checking the checkmyport service..."
+RES=$(timeout 8 curl -s "$CHECKMYPORT?proto=udp&port=60000&text=$TEXT" || true)
+if [[ "$RES" != "ok" ]]; then
+    out <<EOF
+Aborted! The accessibility check failed
+Recommendation: Check if $CHECKMYPORT is accessible
+EOF
+    exit 1
+fi
+
 # tcp/443
+out <<< "checking TCP/443 accessibility..."
+(sleep 3 && \
+    timeout 8 curl -s "$CHECKMYPORT?proto=tcp&port=443&text=$TEXT" || true) &
+RES=$(timeout 8 ncat -l 0.0.0.0 443 || true)
+if [[ "$RES" != "$TEXT" ]]; then
+    out <<EOF
+Aborted! TCP/443 is not accessable
+Recommendation: Check firewall and NAT rules, allow TCP/443
+EOF
+    exit 1
+fi
+
 # udp/10000
+out <<< "checking UDP/10000 accessibility..."
+(sleep 3 && \
+    timeout 8 curl -s "$CHECKMYPORT?proto=udp&port=10000&text=$TEXT" || true) &
+RES=$(timeout 8 ncat -u -l 0.0.0.0 10000 || true)
+if [[ "$RES" != "$TEXT" ]]; then
+    out <<EOF
+Aborted! UDP/10000 is not accessable
+Recommendation: Check firewall and NAT rules, allow UDP/10000
+EOF
+    exit 1
+fi
 
 
 # -----------------------------------------------------------------------------
 # installation
 # -----------------------------------------------------------------------------
 # jitsi-meet
+out <<< "installing Jitsi..."
+
 wget -O /etc/apt/sources.list.d/jitsi-stable.list \
     $JITSI_TMPL/etc/apt/sources.list.d/jitsi-stable.list
 
@@ -273,24 +319,14 @@ debconf-set-selections <<< \
 debconf-set-selections <<< \
     "jitsi-meet-web-config jitsi-meet/cert-choice select Generate a new self-signed certificate (You will later get a chance to obtain a Let'\''s encrypt certificate)"
 apt-get $APT_PROXY_OPTION -y --install-recommends install jitsi-meet
-
-# jitsi-meet-tokens related packages
-# don't download stretch.list before jitsi-meet installation, java issue
-wget -O /etc/apt/sources.list.d/stretch.list \
-    $JITSI_TMPL/etc/apt/sources.list.d/stretch.list
-
-apt-get --allow-insecure-repositories update
-apt-get $APT_PROXY_OPTION --allow-unauthenticated -y install \
-    jitsi-archive-keyring
-apt-get update
-
-apt-get $APT_PROXY_OPTION -y install libssl1.0-dev
 apt-get $APT_PROXY_OPTION -y install luarocks liblua5.2-dev
 
 
 # -----------------------------------------------------------------------------
 # certbot
 # -----------------------------------------------------------------------------
+out <<< "configuring Certbot..."
+
 mkdir -p /etc/systemd/system/certbot.service.d
 wget -O /etc/systemd/system/certbot.service.d/override.conf \
     $COMMON_TMPL/etc/systemd/system/certbot.service.d/override.conf
@@ -302,11 +338,13 @@ systemctl daemon-reload
 # -----------------------------------------------------------------------------
 # coturn
 # -----------------------------------------------------------------------------
+out <<< "configuring Coturn..."
+
 cat >>/etc/turnserver.conf <<EOF
 
 # the following lines added by eb-jitsi
-listening-ip=$IP
-allowed-peer-ip=$IP
+listening-ip=$PUBLIC_IP
+allowed-peer-ip=$PUBLIC_IP
 no-udp
 EOF
 
@@ -317,6 +355,8 @@ systemctl restart coturn.service
 # -----------------------------------------------------------------------------
 # prosody
 # -----------------------------------------------------------------------------
+out <<< "configuring Prosody..."
+
 sed -i "s/^-- \(https_ports = { };\)/\1/" \
     /etc/prosody/conf.avail/$JITSI_HOST.cfg.lua
 sed -i "/turns.*tcp/ s/host\s*=[^,]*/host = \"$TURN_HOST\"/" \
@@ -336,6 +376,8 @@ systemctl reload prosody.service
 # -----------------------------------------------------------------------------
 # jicofo
 # -----------------------------------------------------------------------------
+out <<< "configuring Jicofo..."
+
 cat >>/etc/jitsi/jicofo/sip-communicator.properties <<EOF
 #org.jitsi.jicofo.DISABLE_AUTO_OWNER=true
 EOF
@@ -352,6 +394,8 @@ systemctl restart jicofo.service
 # -----------------------------------------------------------------------------
 # nginx
 # -----------------------------------------------------------------------------
+out <<< "configuring Nginx..."
+
 mkdir -p /etc/systemd/system/nginx.service.d
 wget -O /etc/systemd/system/nginx.service.d/override.conf \
     $JITSI_TMPL//etc/systemd/system/nginx.service.d/override.conf
@@ -390,6 +434,8 @@ systemctl start nginx.service
 # -----------------------------------------------------------------------------
 # jvb
 # -----------------------------------------------------------------------------
+out <<< "configuring JVB..."
+
 # default memory limit
 sed -i '/^JVB_SECRET=/a \
 \
@@ -419,11 +465,35 @@ systemctl restart jitsi-videobridge2.service
 # -----------------------------------------------------------------------------
 # lets encrypt
 # -----------------------------------------------------------------------------
+out <<< "setting Let's Encrypt certificates..."
+
+certbot certonly --dry-run --non-interactive -m info@$JITSI_HOST --agree-tos \
+    --webroot -w /var/www/html -d $JITSI_HOST,$TURN_HOST
+certbot certonly -m info@$JITSI_HOST --non-interactive --agree-tos \
+    --webroot -w /var/www/html -d $JITSI_HOST,$TURN_HOST
+
+rm -f /etc/jitsi/meet/$JITSI_HOST.crt
+rm -f /etc/jitsi/meet/$JITSI_HOST.key
+ln -s /etc/letsencrypt/live/$JITSI_HOST/fullchain.pem \
+    /etc/jitsi/meet/$JITSI_HOST.crt
+ln -s /etc/letsencrypt/live/$JITSI_HOST/privkey.pem \
+    /etc/jitsi/meet/$JITSI_HOST.key
+
+out <<< "restarting Certbot..."
+systemctl restart certbot.service
+
+out <<< "restarting Coturn..."
+systemctl restart coturn.service
+
+out <<< "restarting Nginx..."
+systemctl restart nginx.service
 
 
 # -----------------------------------------------------------------------------
 # customization
 # -----------------------------------------------------------------------------
+out <<< "customizing..."
+
 # jicofo-log-analyzer
 wget -O /usr/local/bin/jicofo-log-analyzer \
     $JITSI_TMPL/usr/local/bin/jicofo-log-analyzer
@@ -438,5 +508,3 @@ chmod 755 /usr/local/bin/jicofo-log-analyzer
 END_TIME=$(date +%s)
 DURATION=$(date -u -d "0 $END_TIME seconds - $START_TIME seconds" +"%H:%M:%S")
 COMPLETED=true
-
-
