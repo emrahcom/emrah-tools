@@ -88,20 +88,24 @@ async function validateInput(
   if (!qs.has("text")) throw new BadRequest("text not found");
 
   const proto = qs.get("proto");
-  const port = qs.get("port");
-  const text = qs.get("text");
-
   if (!(proto === "tcp" || proto === "udp")) {
     throw new BadRequest("invalid proto");
   }
+
+  const port = qs.get("port");
   if (!port || !port.match("^[0-9]+$")) throw new BadRequest("invalid port");
+  const nport: number = Number(port);
+  if (nport < 20 || nport > 65535) throw new BadRequest("port out of range");
+
+  const text = qs.get("text");
   if (!text || !text.match("^[0-9a-zA-Z _-]+$")) {
     throw new BadRequest("invalid text");
   }
+  if (text.length > 100) throw new BadRequest("very long text");
 
   return {
     addr: "192.168.1.1",
-    port: Number(port),
+    port: nport,
     proto: proto,
     text: text,
   };
