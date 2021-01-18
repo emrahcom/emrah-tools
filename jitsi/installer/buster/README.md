@@ -10,7 +10,7 @@ if you need a scalable clustered Jitsi system.
 
 ## Usage
 * Don't use it on a working production server
-* Run as `root` (`su -l` or `sudo su -l`)
+* Run as _root_ (`su -l` or `sudo su -l`)
 * Follow the recommendations
 
 ```bash
