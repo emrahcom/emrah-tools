@@ -284,6 +284,19 @@ EOF
     exit 1
 fi
 
+# tcp/80
+out <<< "checking TCP/80 accessibility..."
+(sleep 3 && \
+    timeout 8 curl -s "$CHECKMYPORT?proto=tcp&port=80&text=$TEXT" || true) &
+RES=$(timeout 8 ncat -l 0.0.0.0 80 || true)
+if [[ "$RES" != "$TEXT" ]]; then
+    out <<EOF
+Aborted! TCP/80 is not accessable
+Recommendation: Check firewall and NAT rules, allow TCP/80
+EOF
+    exit 1
+fi
+
 # tcp/443
 out <<< "checking TCP/443 accessibility..."
 (sleep 3 && \
