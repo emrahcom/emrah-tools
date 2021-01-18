@@ -6,8 +6,6 @@ set -e
 # -----------------------------------------------------------------------------
 export APT_PROXY_OPTION=$APT_PROXY_OPTION
 export DEBIAN_FRONTEND=noninteractive
-export DISTRO_NAME="Debian"
-export DISTRO_RELEASE="buster"
 export JITSI_TMPL=https://raw.githubusercontent.com/emrahcom/emrah-buster-templates/master/machines/eb-jitsi
 export COMMON_TMPL=https://raw.githubusercontent.com/emrahcom/emrah-buster-base/master/machines/common
 export CHECKMYPORT=https://checkmyport.emrah.com
@@ -73,7 +71,7 @@ read answer
 if [[ "$answer" != "YES" ]]; then
     out <<EOF
 Aborted! not approved, typed: $answer
-Recommendation: Use this script on a newly installed $DISTRO_NAME machine
+Recommendation: Use this script on a newly installed machine
 EOF
     exit 1
 fi
@@ -94,10 +92,10 @@ fi
 # distro
 out <<< "checking the distro..."
 DISTRO=$(grep VERSION_CODENAME /etc/os-release | cut -d= -f2)
-if [[ "$DISTRO" != "$DISTRO_RELEASE" ]]; then
+if [[ "$DISTRO" != "buster" ]] && [[ "$DISTRO" != "focal" ]]; then
     out <<EOF
-Aborted! Your distro is not $DISTRO_NAME $DISTRO_RELEASE
-Recommendation: Switch to a $DISTRO_NAME $DISTRO_RELEASE machine
+Aborted! Your distro is not supported
+Recommendation: Switch to Debian 10 Buster or Ubuntu 20.04 Focal Fossa
 EOF
     exit 1
 fi
@@ -344,7 +342,7 @@ apt-get update
 debconf-set-selections <<< \
     "jicofo jitsi-videobridge/jvb-hostname string $JITSI_HOST"
 debconf-set-selections <<< \
-    "jitsi-meet-web-config jitsi-meet/cert-choice select Generate a new self-signed certificate (You will later get a chance to obtain a Let'\''s encrypt certificate)"
+    "jitsi-meet-web-config jitsi-meet/cert-choice select Generate a new self-signed certificate (You will later get a chance to obtain a Let's encrypt certificate)"
 apt-get $APT_PROXY_OPTION -y --install-recommends install jitsi-meet
 apt-get $APT_PROXY_OPTION -y install luarocks liblua5.2-dev
 
