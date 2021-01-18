@@ -287,8 +287,9 @@ fi
 # tcp/80
 out <<< "checking TCP/80 accessibility..."
 (sleep 3 && \
-    timeout 8 curl -s "$CHECKMYPORT?proto=tcp&port=80&text=$TEXT" || true) &
-RES=$(timeout 8 ncat -l 0.0.0.0 80 || true)
+    timeout 8 curl -s "$CHECKMYPORT?proto=tcp&port=80&text=$TEXT" \
+    >/dev/null 2>&1 || true) &
+RES=$(timeout 8 ncat -l 0.0.0.0 80 | tr -d '\0' || true)
 if [[ "$RES" != "$TEXT" ]]; then
     out <<EOF
 Aborted! TCP/80 is not accessable
@@ -300,8 +301,9 @@ fi
 # tcp/443
 out <<< "checking TCP/443 accessibility..."
 (sleep 3 && \
-    timeout 8 curl -s "$CHECKMYPORT?proto=tcp&port=443&text=$TEXT" || true) &
-RES=$(timeout 8 ncat -l 0.0.0.0 443 || true)
+    timeout 8 curl -s "$CHECKMYPORT?proto=tcp&port=443&text=$TEXT" \
+    >/dev/null 2>&1 || true) &
+RES=$(timeout 8 ncat -l 0.0.0.0 443 | tr -d '\0' || true)
 if [[ "$RES" != "$TEXT" ]]; then
     out <<EOF
 Aborted! TCP/443 is not accessable
@@ -313,8 +315,9 @@ fi
 # udp/10000
 out <<< "checking UDP/10000 accessibility..."
 (sleep 3 && \
-    timeout 8 curl -s "$CHECKMYPORT?proto=udp&port=10000&text=$TEXT" || true) &
-RES=$(timeout 8 ncat -u -l 0.0.0.0 10000 || true)
+    timeout 8 curl -s "$CHECKMYPORT?proto=udp&port=10000&text=$TEXT" \
+    >/dev/null 2>&1 || true) &
+RES=$(timeout 8 ncat -u -l 0.0.0.0 10000 | tr -d '\0' || true)
 if [[ "$RES" != "$TEXT" ]]; then
     out <<EOF
 Aborted! UDP/10000 is not accessable
