@@ -1,7 +1,8 @@
 Jitok
 =====
 
-## Packages
+## Container
+#### Packages
 ```bash
 apt-get update
 apt-get dist-upgrade
@@ -9,7 +10,7 @@ apt-get dist-upgrade
 apt-get install unzip nginx
 ```
 
-## Deno
+#### Deno
 ```bash
 LATEST=$(curl -sSf https://github.com/denoland/deno/releases | \
     grep -o "/denoland/deno/releases/download/.*/deno-.*linux.*\.zip" | \
@@ -25,7 +26,7 @@ cp /tmp/deno /usr/local/bin/
 deno --version
 ```
 
-## System
+#### Application
 ```bash
 adduser jitok --disabled-password --gecos ""
 
@@ -40,9 +41,9 @@ systemctl enable jitok.service
 systemctl restart jitok.service
 ```
 
-## Nginx
-On the host
+## Host
 
+#### Nginx
 ```bash
 apt-get install nginx ssl-cert certbot
 
