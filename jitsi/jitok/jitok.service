@@ -1,0 +1,14 @@
+[Unit]
+Description=Jitsi Token Service
+After=network-online.target
+
+[Service]
+User=jitok
+Group=jitok
+ExecStart=/home/jitok/app/jitok.sh
+KillMode=control-group
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
