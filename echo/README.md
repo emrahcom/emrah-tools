@@ -30,11 +30,11 @@ deno --version
 adduser echo --disabled-password --gecos ""
 
 mkdir -p /home/echo/app
-cp echo.ts /home/echo/app/
-cp echo.sh /home/echo/app/
+cp container/home/echo/app/echo.ts /home/echo/app/
+cp container/home/echo/app/echo.sh /home/echo/app/
 chmod 755 /home/echo/app/echo.sh
 
-cp echo.service /etc/systemd/system/
+cp container/etc/systemd/system/echo.service /etc/systemd/system/
 systemctl daemon-reload
 systemctl enable echo.service
 systemctl restart echo.service
@@ -46,7 +46,7 @@ On the host
 ```bash
 apt-get install nginx ssl-cert certbot
 
-cp checkmyport.conf /etc/nginx/sites-available/
+cp host/etc/nginx/sites-available/checkmyport.conf /etc/nginx/sites-available/
 ln -s ../sites-available/checkmyport.conf /etc/nginx/sites-enabled/
 
 /etc/init.d/nginx configtest
