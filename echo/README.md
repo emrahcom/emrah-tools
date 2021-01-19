@@ -30,9 +30,7 @@ deno --version
 ```bash
 adduser echo --disabled-password --gecos ""
 
-mkdir -p /home/echo/app
-cp container/home/echo/app/echo.ts /home/echo/app/
-cp container/home/echo/app/echo.sh /home/echo/app/
+cp -arp container/home/echo/app /home/echo/
 chmod 755 /home/echo/app/echo.sh
 
 cp container/etc/systemd/system/echo.service /etc/systemd/system/
@@ -43,7 +41,6 @@ systemctl restart echo.service
 
 ## Host
 #### Nginx
-
 ```bash
 apt-get install nginx ssl-cert certbot
 
@@ -58,14 +55,8 @@ certbot certonly --dry-run --agree-tos --webroot -w /var/www/html \
 certbot certonly --agree-tos --webroot -w /var/www/html \
     -d checkmyport.mydomain.com
 systemctl reload nginx.service
-```
 
-`/etc/systemd/system/certbot.service.d/override.conf`
-```conf
-[Service]
-ExecStartPost=systemctl reload nginx.service
-```
-
-```bash
+cp host/etc/systemd/system/certbot.service.d/override.conf \
+    /etc/systemd/system/certbot.service.d/
 systemctl daemon-reload
 ```
