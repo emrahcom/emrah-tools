@@ -30,10 +30,8 @@ deno --version
 ```bash
 adduser jitok --disabled-password --gecos ""
 
-mkdir -p /home/jitok/app
-cp jitok.ts /home/jitok/app/
-cp jitok.sh /home/jitok/app/
-chmod 755 /home/jitok/app/jitok.sh
+cp -arp home/jitok/app /home/jitok/
+chmod 755 /home/jitok/app/api/jitok.sh
 
 cp jitok.service /etc/systemd/system/
 systemctl daemon-reload
@@ -41,13 +39,22 @@ systemctl enable jitok.service
 systemctl restart jitok.service
 ```
 
-## Host
+#### Nginx
+```bash
+cp container/etc/nginx/sites-available/jitok.conf /etc/nginx/sites-available/
+ln -s ../sites-available/jitok.conf /etc/nginx/sites-enabled/
 
+/etc/init.d/nginx configtest
+systemctl restart nginx.service
+```
+
+
+## Host
 #### Nginx
 ```bash
 apt-get install nginx ssl-cert certbot
 
-cp jitok.conf /etc/nginx/sites-available/
+cp host/etc/nginx/sites-available/jitok.conf /etc/nginx/sites-available/
 ln -s ../sites-available/jitok.conf /etc/nginx/sites-enabled/
 
 /etc/init.d/nginx configtest
@@ -58,14 +65,8 @@ certbot certonly --dry-run --agree-tos --webroot -w /var/www/html \
 certbot certonly --agree-tos --webroot -w /var/www/html \
     -d jitok.mydomain.com
 systemctl reload nginx.service
-```
 
-`/etc/systemd/system/certbot.service.d/override.conf`
-```conf
-[Service]
-ExecStartPost=systemctl reload nginx.service
-```
-
-```bash
+cp host/etc/systemd/system/certbot.service.d/override.conf \
+    /etc/systemd/system/certbot.service.d/
 systemctl daemon-reload
 ```

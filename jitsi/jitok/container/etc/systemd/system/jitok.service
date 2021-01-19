@@ -1,11 +1,11 @@
 [Unit]
-Description=Jitsi Token Service
+Description=Jitsi Token API Service
 After=network-online.target
 
 [Service]
 User=jitok
 Group=jitok
-ExecStart=/home/jitok/app/jitok.sh
+ExecStart=/home/jitok/app/api/jitok.sh
 KillMode=control-group
 Restart=always
 RestartSec=10
