@@ -1,7 +1,8 @@
 Echo
 ====
 
-## Packages
+## Container
+#### Packages
 ```bash
 apt-get update
 apt-get dist-upgrade
@@ -9,7 +10,7 @@ apt-get dist-upgrade
 apt-get install unzip ncat
 ```
 
-## Deno
+#### Deno
 ```bash
 LATEST=$(curl -sSf https://github.com/denoland/deno/releases | \
     grep -o "/denoland/deno/releases/download/.*/deno-.*linux.*\.zip" | \
@@ -25,7 +26,7 @@ cp /tmp/deno /usr/local/bin/
 deno --version
 ```
 
-## System
+#### Application
 ```bash
 adduser echo --disabled-password --gecos ""
 
@@ -40,8 +41,8 @@ systemctl enable echo.service
 systemctl restart echo.service
 ```
 
-## Nginx
-On the host
+## Host
+#### Nginx
 
 ```bash
 apt-get install nginx ssl-cert certbot
