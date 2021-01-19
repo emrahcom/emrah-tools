@@ -28,7 +28,19 @@ class TokenFailed extends Error {
 
 // ----------------------------------------------------------------------------
 interface TokenArgs {
+  domain: string;
   secret: string;
+  aud: string;
+  iss: string;
+  room: string;
+  exp: number;
+  username?: string;
+  email?: string;
+  avatar?: string;
+  ismoderator?: boolean;
+  enablerecording?: boolean;
+  enablelivestreaming?: boolean;
+  enablescreensharing?: boolean;
 }
 
 // ----------------------------------------------------------------------------
@@ -83,9 +95,16 @@ async function validateInput(
   const secret = qs.get("secret");
   if (!secret) throw new BadRequest("invalid secret");
 
-  return {
-    secret: secret,
+  let token: TokenArgs = {
+    domain: "mydomain",
+    secret: "mysecret",
+    aud: "myapp",
+    iss: "myapp",
+    room: "myroom",
+    exp: 3600,
   };
+
+  return token;
 }
 
 // ----------------------------------------------------------------------------
