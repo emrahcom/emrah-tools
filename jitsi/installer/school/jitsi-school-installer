@@ -1,0 +1,17 @@
+#!/bin/bash
+set -e
+
+# -----------------------------------------------------------------------------
+# https://github.com/emrahcom/emrah-tools
+# -----------------------------------------------------------------------------
+BIR=https://raw.githubusercontent.com/emrahcom/emrah-tools/main/jitsi/installer/buster/
+SIR=https://raw.githubusercontent.com/emrahcom/emrah-tools/main/jitsi/installer/school/
+
+export APT_PROXY_OPTION=$APT_PROXY_OPTION
+export DEBIAN_FRONTEND=noninteractive
+apt-get $APT_PROXY_OPTION -y install wget ca-certificates
+
+wget -O /tmp/jitsi-buster-installer $BIR/jitsi-buster-installer
+wget -O /tmp/jbi-custom-extra $SIR/jbi-custom-extra
+
+bash /tmp/jitsi-buster-installer

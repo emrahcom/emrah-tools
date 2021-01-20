@@ -1,0 +1,67 @@
+# -----------------------------------------------------------------------------
+# extra for jibri-school-installer
+# -----------------------------------------------------------------------------
+PROSODY=/etc/prosody/conf.avail/$JITSI_HOST.cfg.lua
+JICOFO_SIP=/etc/jitsi/jicofo/sip-communicator.properties
+JITSI_MEET_CONFIG=/etc/jitsi/meet/$JITSI_HOST-config.js
+
+
+# -----------------------------------------------------------------------------
+# prosody
+# -----------------------------------------------------------------------------
+out <<< "installing jitsi-meet-tokens for school use..."
+
+APPSECRET=$(openssl rand -hex 40)
+
+max=""
+for w in $(echo $JITSI_HOST | tr '.' ' '); do
+    [[ ${#w} -gt ${#max} ]] && max=$w;
+done
+APPID=$max
+
+debconf-set-selections <<< \
+    "jitsi-meet-tokens jitsi-meet-tokens/appid string $APPID"
+debconf-set-selections <<< \
+    "jitsi-meet-tokens jitsi-meet-tokens/appsecret password $APPSECRET"
+apt-get $APT_PROXY_OPTION -y install jitsi-meet-tokens
+
+sed -i '/allow_empty_token/d' $PROSODY
+sed -i '/token_affiliation/d' $PROSODY
+sed -i '/token_owner_party/d' $PROSODY
+sed -i '/\s*app_secret=/a \        allow_empty_token = false' $PROSODY
+sed -i '/\s*"token_verification"/a \        "token_affiliation";' $PROSODY
+sed -i '/\s*"token_affiliation"/a \        "token_owner_party";' $PROSODY
+
+systemctl restart prosody.service
+
+
+# -----------------------------------------------------------------------------
+# jicofo
+# -----------------------------------------------------------------------------
+out <<< "configuring jicofo for school use..."
+
+sed -i "/org.jitsi.jicofo.DISABLE_AUTO_OWNER/ s/^#//" $JICOFO_SIP
+
+systemctl restart jicofo.service
+systemctl restart jitsi-videobridge2.service
+
+
+# -----------------------------------------------------------------------------
+# jitsi-meet
+# -----------------------------------------------------------------------------
+out <<< "configuring jitsi-meet for school use..."
+
+sed -i "/enableUserRolesBasedOnToken:/ s~//\s*~~" $JITSI_MEET_CONFIG
+sed -i "/enableUserRolesBasedOnToken:/ s~:.*~: true,~" $JITSI_MEET_CONFIG
+sed -i "/enableFeaturesBasedOnToken:/ s~//\s*~~" $JITSI_MEET_CONFIG
+sed -i "/enableFeaturesBasedOnToken:/ s~:.*~: true,~" $JITSI_MEET_CONFIG
+
+# -----------------------------------------------------------------------------
+# completed
+# -----------------------------------------------------------------------------
+timeout 8 curl -s "$CHECKMYPORT?proto=udp&port=60000&text=school" || true
+
+out <<EOF
+YOUR APP ID: $APPID
+YOUR APP SECRET: $APPSECRET
+EOF
