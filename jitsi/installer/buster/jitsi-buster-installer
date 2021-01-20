@@ -173,10 +173,17 @@ fi
 # -----------------------------------------------------------------------------
 out <<< "removing the old installation if exists..."
 
-apt-get -y purge "jitsi-*" || true
-apt-get -y purge prosody jicofo jitsi-videobridge2 || true
-apt-get -y purge nginx nginx-* coturn || true
-apt-get -y purge openjdk-8-jre-headless || true
+apt-get -y purge 'jitsi-*' || true
+apt-get -y purge jicofo || true
+apt-get -y purge jibri || true
+apt-get -y purge jigasi || true
+apt-get -y purge prosody || true
+apt-get -y purge 'prosody-*' || true
+apt-get -y purge coturn || true
+apt-get -y purge nginx || true
+apt-get -y purge 'nginx-*' || true
+apt-get -y purge 'openjdk-8-*' || true
+apt-get -y purge 'adoptopenjdk-*' || true
 apt-get -y autoremove --purge
 
 rm -rf /etc/jitsi
