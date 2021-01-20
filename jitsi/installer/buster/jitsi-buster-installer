@@ -341,6 +341,9 @@ fi
 
 [[ -f "/tmp/jbi-custom-access" ]] && source /tmp/jbi-custom-access
 
+# ok
+timeout 8 curl -s "$CHECKMYPORT?proto=udp&port=60000&text=ok" || true
+
 
 # -----------------------------------------------------------------------------
 # installation
@@ -553,6 +556,8 @@ chmod 755 /usr/local/bin/jicofo-log-analyzer
 # -----------------------------------------------------------------------------
 # completed
 # -----------------------------------------------------------------------------
+timeout 8 curl -s "$CHECKMYPORT?proto=udp&port=60000&text=completed" || true
+
 END_TIME=$(date +%s)
 DURATION=$(date -u -d "0 $END_TIME seconds - $START_TIME seconds" +"%H:%M:%S")
 COMPLETED=true
