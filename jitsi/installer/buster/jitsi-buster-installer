@@ -167,6 +167,8 @@ EOF
     exit 1
 fi
 
+[[ -f "/tmp/jbi-custom-input" ]] && source /tmp/jbi-custom-input
+
 
 # -----------------------------------------------------------------------------
 # remove the old installation if exists
@@ -195,6 +197,8 @@ rm -rf /usr/share/jicofo
 rm -f  /etc/apt/sources.list.d/stretch.list
 rm -f  /etc/apt/sources.list.d/jitsi-stable.list
 
+[[ -f "/tmp/jbi-custom-purge" ]] && source /tmp/jbi-custom-purge
+
 
 # -----------------------------------------------------------------------------
 # base packages
@@ -215,6 +219,8 @@ apt-get $APT_PROXY_OPTION -y install procps htop bmon
 apt-get $APT_PROXY_OPTION -y install net-tools ngrep ncat
 apt-get $APT_PROXY_OPTION -y install ssl-cert certbot
 apt-get $APT_PROXY_OPTION -y install gcc git
+
+[[ -f "/tmp/jbi-custom-base" ]] && source /tmp/jbi-custom-base
 
 
 # -----------------------------------------------------------------------------
@@ -272,6 +278,8 @@ Recommendation: Set $EXTERNAL_IP as $TURN_HOST A record
 EOF
     exit 1
 fi
+
+[[ -f "/tmp/jbi-custom-check" ]] && source /tmp/jbi-custom-check
 
 
 # -----------------------------------------------------------------------------
@@ -331,6 +339,8 @@ EOF
     exit 1
 fi
 
+[[ -f "/tmp/jbi-custom-access" ]] && source /tmp/jbi-custom-access
+
 
 # -----------------------------------------------------------------------------
 # installation
@@ -352,6 +362,8 @@ debconf-set-selections <<< \
     "jitsi-meet-web-config jitsi-meet/cert-choice select Generate a new self-signed certificate (You will later get a chance to obtain a Let's encrypt certificate)"
 apt-get $APT_PROXY_OPTION -y --install-recommends install jitsi-meet
 apt-get $APT_PROXY_OPTION -y install luarocks liblua5.2-dev
+
+[[ -f "/tmp/jbi-custom-install" ]] && source /tmp/jbi-custom-install
 
 
 # -----------------------------------------------------------------------------
@@ -522,16 +534,20 @@ systemctl restart nginx.service
 
 
 # -----------------------------------------------------------------------------
-# customization
+# tools
 # -----------------------------------------------------------------------------
-out <<< "customizing..."
+out <<< "tools..."
 
 # jicofo-log-analyzer
 wget -O /usr/local/bin/jicofo-log-analyzer \
     $JITSI_TMPL/usr/local/bin/jicofo-log-analyzer
 chmod 755 /usr/local/bin/jicofo-log-analyzer
 
-# jitsi_customization
+
+# -----------------------------------------------------------------------------
+# extra customization
+# -----------------------------------------------------------------------------
+[[ -f "/tmp/jbi-custom-extra" ]] && source /tmp/jbi-custom-extra
 
 
 # -----------------------------------------------------------------------------
