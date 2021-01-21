@@ -1,3 +1,6 @@
+// ----------------------------------------------------------------------------
+// echo.ts
+// ----------------------------------------------------------------------------
 import {
   serve,
   Server,
@@ -27,7 +30,7 @@ class SubProcess extends Error {
 }
 
 // ----------------------------------------------------------------------------
-interface EchoArgs {
+interface Echo {
   addr: string;
   port: number;
   proto: string;
@@ -81,7 +84,7 @@ async function parseQueryString(req: ServerRequest): Promise<URLSearchParams> {
 async function validateInput(
   req: ServerRequest,
   qs: URLSearchParams,
-): Promise<EchoArgs> {
+): Promise<Echo> {
   if (!req.headers.has("X-Forwarded-For")) {
     throw new BadRequest("remote_ip not found");
   }
@@ -117,33 +120,37 @@ async function validateInput(
 }
 
 // ----------------------------------------------------------------------------
-async function echo(ec: EchoArgs) {
+async function echo(inp: Echo) {
   let cmd: string;
-  if (ec.proto === "udp") {
-    cmd = `echo ${ec.text} | timeout 6 ncat -u ${ec.addr} ${ec.port}`;
-  } else if (ec.proto === "tcp") {
-    cmd = `echo ${ec.text} | timeout 6 ncat ${ec.addr} ${ec.port}`;
+  if (inp.proto === "udp") {
+    cmd = `echo ${inp.text} | timeout 6 ncat -u ${inp.addr} ${inp.port}`;
+  } else if (inp.proto === "tcp") {
+    cmd = `echo ${inp.text} | timeout 6 ncat ${inp.addr} ${inp.port}`;
   } else {
     throw new Error("unsupported protocol");
   }
 
-  const encoder = new TextEncoder();
-  const shell = Deno.run({
-    cmd: ["bash"],
-    stdin: "piped",
-  });
+  try {
+    const encoder = new TextEncoder();
+    const shell = Deno.run({
+      cmd: ["bash"],
+      stdin: "piped",
+    });
 
-  await shell.stdin.write(encoder.encode(cmd));
-  await shell.stdin.close();
-  await shell.status();
-  shell.close();
+    await shell.stdin.write(encoder.encode(cmd));
+    await shell.stdin.close();
+    await shell.status();
+    shell.close();
+  } catch {
+    throw new SubProcess("runtime error");
+  }
 }
 
 // ----------------------------------------------------------------------------
 async function triggerEcho(req: ServerRequest) {
   parseQueryString(req)
     .then((qs) => validateInput(req, qs))
-    .then((ec) => echo(ec))
+    .then((inp) => echo(inp))
     .then(() => ok(req, "ok"))
     .catch((e) => {
       if (e.name === "BadRequest") badRequest(req);
