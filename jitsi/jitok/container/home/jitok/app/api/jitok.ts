@@ -1,3 +1,6 @@
+// ----------------------------------------------------------------------------
+// jitok.ts
+// ----------------------------------------------------------------------------
 import {
   serve,
   Server,
@@ -19,6 +22,14 @@ class BadRequest extends Error {
 }
 
 // ----------------------------------------------------------------------------
+class PayloadFailed extends Error {
+  constructor(...params: any) {
+    super(...params);
+    this.name = "PayloadFailed";
+  }
+}
+
+// ----------------------------------------------------------------------------
 class TokenFailed extends Error {
   constructor(...params: any) {
     super(...params);
@@ -27,20 +38,32 @@ class TokenFailed extends Error {
 }
 
 // ----------------------------------------------------------------------------
-interface TokenArgs {
-  domain: string;
-  secret: string;
+interface User {
+  name?: string;
+  email?: string;
+  affiliation?: string;
+  avatar?: string;
+}
+
+interface Features {
+  recording?: boolean;
+  livestreaming?: boolean;
+  screensharing?: boolean;
+}
+
+interface Context {
+  user?: User;
+  features?: Features;
+}
+
+interface Payload {
+  key: string;
   aud: string;
   iss: string;
-  room: string;
+  sub: string;
   exp: number;
-  username?: string;
-  email?: string;
-  avatar?: string;
-  ismoderator?: boolean;
-  enablerecording?: boolean;
-  enablelivestreaming?: boolean;
-  enablescreensharing?: boolean;
+  room: string;
+  context?: Context;
 }
 
 // ----------------------------------------------------------------------------
@@ -90,36 +113,43 @@ async function parseQueryString(req: ServerRequest): Promise<URLSearchParams> {
 async function validateInput(
   req: ServerRequest,
   qs: URLSearchParams,
-): Promise<TokenArgs> {
-  if (!qs.has("secret")) throw new BadRequest("secret not found");
-  const secret = qs.get("secret");
-  if (!secret) throw new BadRequest("invalid secret");
+): Promise<URLSearchParams> {
+  if (!qs.has("key")) throw new BadRequest("key not found");
+  const key = qs.get("key");
+  if (!key) throw new BadRequest("invalid key");
 
-  let token: TokenArgs = {
-    domain: "mydomain",
-    secret: "mysecret",
+  return qs;
+}
+
+// ----------------------------------------------------------------------------
+async function createPayload(inp: URLSearchParams): Promise<Payload> {
+  let pl: Payload = {
+    key: "mysecret",
     aud: "myapp",
     iss: "myapp",
+    sub: "mydomain",
     room: "myroom",
     exp: 3600,
   };
 
-  return token;
+  return pl;
 }
 
 // ----------------------------------------------------------------------------
-async function createToken(tk: TokenArgs): Promise<string> {
-  return tk.secret;
+async function createToken(pl: Payload): Promise<string> {
+  return pl.key;
 }
 
 // ----------------------------------------------------------------------------
 async function triggerToken(req: ServerRequest) {
   parseQueryString(req)
     .then((qs) => validateInput(req, qs))
-    .then((tk) => createToken(tk))
-    .then((token) => ok(req, token))
+    .then((inp) => createPayload(inp))
+    .then((pl) => createToken(pl))
+    .then((tk) => ok(req, tk))
     .catch((e) => {
       if (e.name === "BadRequest") badRequest(req);
+      else if (e.name === "PayloadFailed") internalServerError(req);
       else if (e.name === "TokenFailed") internalServerError(req);
       else notImplemented(req);
     })
