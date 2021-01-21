@@ -41,7 +41,7 @@ bash jitsi-school-installer
   "iss": "appid",
   "sub": "jitsi.yourdomain.com",
   "exp": 1611264624,
-  "room": "classroom-name",
+  "room": "*",
   "context": {
     "user": {
       "name": "teacher-name",
