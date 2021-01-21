@@ -16,7 +16,7 @@ installation to avoid potential problems.
 * There can be many teachers in a classroom with teacher privileges
 * The teacher always gets teacher privileges when reconnecting
 * The participants cannot change their profiles
-* Disabled YouTube sharing
+* Disabled YouTube sharing (_only for desktop clients_)
 
 
 ## Usage
