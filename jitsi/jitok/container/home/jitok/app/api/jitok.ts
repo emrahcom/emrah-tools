@@ -45,17 +45,20 @@ interface User {
   avatar?: string;
 }
 
+// ----------------------------------------------------------------------------
 interface Features {
   recording?: boolean;
   livestreaming?: boolean;
   screensharing?: boolean;
 }
 
+// ----------------------------------------------------------------------------
 interface Context {
   user?: User;
   features?: Features;
 }
 
+// ----------------------------------------------------------------------------
 interface Payload {
   key: string;
   aud: string;
