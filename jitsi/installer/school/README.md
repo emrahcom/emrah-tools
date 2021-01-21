@@ -15,7 +15,7 @@ installation to avoid potential problems.
 * The classroom will be closed 60 seconds after the teacher leaves.
 * There can be many teachers in a classroom with teacher privileges
 * The teacher always gets teacher privileges when reconnecting
-* The participants can not change their profiles
+* The participants cannot change their profiles
 * Disabled YouTube sharing
 
 
@@ -73,9 +73,9 @@ bash jitsi-school-installer
       "affiliation": "student"
     },
     "features": {
-      "recording": true,
-      "livestreaming": true,
-      "screen-sharing": false
+      "recording": false,
+      "livestreaming": false,
+      "screen-sharing": true
     }
   }
 }
