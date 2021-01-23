@@ -21,9 +21,25 @@ installation to avoid potential problems.
 
 ## Usage
 * Don't use it on a working production server
-* Run as _root_ (`su -l` or `sudo su -l`)
+* Run as _root_
 * Follow the recommendations
 
+#### Being root
+Switch to the `root` account if you are not already `root`. Use one of the
+following command according to your system.
+
+```bash
+sudo su -l
+```
+
+or
+
+```bash
+su -l
+```
+
+
+#### Installation
 ```bash
 wget -O jitsi-school-installer https://raw.githubusercontent.com/emrahcom/emrah-tools/main/jitsi/installer/school/jitsi-school-installer
 
