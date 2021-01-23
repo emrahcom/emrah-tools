@@ -6,6 +6,13 @@ import {
   Server,
   ServerRequest,
 } from "https://deno.land/std/http/server.ts";
+import { Algorithm } from "https://deno.land/x/djwt/algorithm.ts";
+import {
+  create,
+  getNumericDate,
+  Header,
+  Payload,
+} from "https://deno.land/x/djwt/mod.ts";
 import { Status } from "https://deno.land/std/http/http_status.ts";
 
 const app: Server = serve({
@@ -14,59 +21,23 @@ const app: Server = serve({
 });
 
 // ----------------------------------------------------------------------------
+interface Token {
+  header: Header;
+  secret: string;
+  payload: Payload;
+}
+
+// ----------------------------------------------------------------------------
+interface Dict {
+  [key: string]: unknown;
+}
+
+// ----------------------------------------------------------------------------
 class BadRequest extends Error {
   constructor(...params: any) {
     super(...params);
     this.name = "BadRequest";
   }
-}
-
-// ----------------------------------------------------------------------------
-class PayloadFailed extends Error {
-  constructor(...params: any) {
-    super(...params);
-    this.name = "PayloadFailed";
-  }
-}
-
-// ----------------------------------------------------------------------------
-class TokenFailed extends Error {
-  constructor(...params: any) {
-    super(...params);
-    this.name = "TokenFailed";
-  }
-}
-
-// ----------------------------------------------------------------------------
-interface User {
-  name?: string;
-  email?: string;
-  affiliation?: string;
-  avatar?: string;
-}
-
-// ----------------------------------------------------------------------------
-interface Features {
-  recording?: boolean;
-  livestreaming?: boolean;
-  screensharing?: boolean;
-}
-
-// ----------------------------------------------------------------------------
-interface Context {
-  user?: User;
-  features?: Features;
-}
-
-// ----------------------------------------------------------------------------
-interface Payload {
-  key: string;
-  aud: string;
-  iss: string;
-  sub: string;
-  exp: number;
-  room: string;
-  context?: Context;
 }
 
 // ----------------------------------------------------------------------------
@@ -113,47 +84,81 @@ async function parseQueryString(req: ServerRequest): Promise<URLSearchParams> {
 }
 
 // ----------------------------------------------------------------------------
-async function validateInput(
-  req: ServerRequest,
-  qs: URLSearchParams,
-): Promise<URLSearchParams> {
-  if (!qs.has("key")) throw new BadRequest("key not found");
-  const key = qs.get("key");
-  if (!key) throw new BadRequest("invalid key");
+async function validateInput(qs: URLSearchParams): Promise<URLSearchParams> {
+  if (!qs.has("secret")) throw new BadRequest("secret not found");
+  const secret = qs.get("secret");
+  if (!secret) throw new BadRequest("invalid secret");
 
   return qs;
 }
 
 // ----------------------------------------------------------------------------
-async function createPayload(inp: URLSearchParams): Promise<Payload> {
+async function createToken(inp: URLSearchParams): Promise<Token> {
+  let alg: Algorithm = "HS512";
+  if (inp.get("alg") === "HS256") alg = "HS256";
+
+  let secret: string = "";
+  let user: Dict = {};
+  let feat: Dict = {};
+  let cont: Dict = {};
   let pl: Payload = {
-    key: "mysecret",
-    aud: "myapp",
-    iss: "myapp",
-    sub: "mydomain",
-    room: "myroom",
-    exp: 3600,
+    aud: "",
+    iss: "",
+    sub: "",
+    room: "*",
+    iat: getNumericDate(0),
+    exp: getNumericDate(3600),
   };
 
-  return pl;
+  // secret
+  if (inp.get("secret")) secret = String(inp.get("secret"));
+  // payload
+  if (inp.get("aud")) pl.aud = String(inp.get("aud"));
+  if (inp.get("iss")) pl.iss = String(inp.get("iss"));
+  if (inp.get("sub")) pl.sub = String(inp.get("sub"));
+  if (inp.get("room")) pl.room = String(inp.get("room"));
+  if (inp.get("exp")) pl.exp = getNumericDate(Number(inp.get("exp")));
+  // payload.context.user
+  if (inp.get("name")) user["name"] = String(inp.get("name"));
+  if (inp.get("email")) user["email"] = String(inp.get("email"));
+  if (inp.get("affi")) user["affiliation"] = String(inp.get("affi"));
+  if (inp.get("avatar")) user["avatar"] = String(inp.get("avatar"));
+  // payload.context.features
+  if (inp.get("rec")) feat["recording"] = Boolean(inp.get("rec"));
+  if (inp.get("live")) feat["livestreaming"] = Boolean(inp.get("live"));
+  if (inp.get("screen")) feat["screen-sharing"] = Boolean(inp.get("screen"));
+  // payload.context
+  if (Object.keys(user).length) cont["user"] = user;
+  if (Object.keys(feat).length) cont["features"] = feat;
+  if (Object.keys(cont).length) pl["context"] = cont;
+
+  return {
+    header: { alg: alg, typ: "JWT" },
+    secret: secret,
+    payload: pl,
+  };
 }
 
 // ----------------------------------------------------------------------------
-async function createToken(pl: Payload): Promise<string> {
-  return pl.key;
+async function createJWT(tk: Token): Promise<string> {
+  const jwt = await create(tk.header, tk.payload, tk.secret);
+
+  console.log(jwt);
+  console.log(tk);
+
+  return jwt;
 }
 
 // ----------------------------------------------------------------------------
-async function triggerToken(req: ServerRequest) {
+async function triggerJWT(req: ServerRequest) {
   parseQueryString(req)
-    .then((qs) => validateInput(req, qs))
-    .then((inp) => createPayload(inp))
-    .then((pl) => createToken(pl))
-    .then((tk) => ok(req, tk))
+    .then((qs) => validateInput(qs))
+    .then((inp) => createToken(inp))
+    .then((tk) => createJWT(tk))
+    .then((jwt) => ok(req, jwt))
     .catch((e) => {
+      console.log(e);
       if (e.name === "BadRequest") badRequest(req);
-      else if (e.name === "PayloadFailed") internalServerError(req);
-      else if (e.name === "TokenFailed") internalServerError(req);
       else notImplemented(req);
     })
     .catch((e) => {
@@ -174,7 +179,7 @@ async function triggerReject(req: ServerRequest) {
 // ----------------------------------------------------------------------------
 async function main() {
   for await (const req of app) {
-    if ((req.method === "POST") && (req.url.match("^/api"))) triggerToken(req);
+    if ((req.method === "POST") && (req.url.match("^/api"))) triggerJWT(req);
     else triggerReject(req);
   }
 }
