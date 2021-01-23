@@ -519,7 +519,7 @@ out <<< "setting Let's Encrypt certificates..."
 
 certbot certonly --dry-run --non-interactive -m info@$JITSI_HOST --agree-tos \
     --webroot -w /var/www/html -d $JITSI_HOST,$TURN_HOST
-certbot certonly -m info@$JITSI_HOST --non-interactive --agree-tos \
+certbot certonly --non-interactive -m info@$JITSI_HOST --agree-tos \
     --webroot -w /var/www/html -d $JITSI_HOST,$TURN_HOST
 
 rm -f /etc/jitsi/meet/$JITSI_HOST.crt
