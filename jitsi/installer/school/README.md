@@ -22,7 +22,7 @@ installation to avoid potential problems.
 ## Usage
 * Don't use it on a working production server
 * Run as _root_
-* Follow the recommendations
+* Follow the recommendations during the installation
 
 #### Being root
 Switch to the `root` account if you are not already `root`. Use one of the
