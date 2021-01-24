@@ -9,6 +9,8 @@ export DEBIAN_FRONTEND=noninteractive
 export JITSI_TMPL=https://raw.githubusercontent.com/emrahcom/emrah-buster-templates/master/machines/eb-jitsi
 export COMMON_TMPL=https://raw.githubusercontent.com/emrahcom/emrah-buster-base/master/machines/common
 export CHECKMYPORT=https://checkmyport.emrah.com
+export TCP=(80 443 4444 5222 5280 5269 5347 5349 8080 8888 9090)
+export UDP=(5349 10000)
 
 
 # -----------------------------------------------------------------------------
@@ -280,6 +282,42 @@ EOF
 fi
 
 [[ -f "/tmp/jbi-custom-check" ]] && source /tmp/jbi-custom-check
+
+
+# -----------------------------------------------------------------------------
+# port availability check
+# -----------------------------------------------------------------------------
+out <<< "checking the availability of TCP ports..."
+netstat -ltnp | egrep '^tcp' | while read -r l; do
+    port=$(echo $l | awk '{print $4}' | rev | cut -d: -f1 | rev)
+    for p in ${TCP[*]}; do
+        if [[ "$p" = "$port" ]]; then
+            prog=$(echo $l | cut -d/ -f2)
+            proto=$(echo $l | awk '{print $1}')
+            out <<EOF
+Aborted! The port $proto/$port is already in use by $prog
+Recommendation: remove this application or change its port
+EOF
+            exit 1
+        fi
+    done
+done
+
+out <<< "checking the availability of UDP ports..."
+netstat -lunp | egrep '^udp' | while read -r l; do
+    port=$(echo $l | awk '{print $4}' | rev | cut -d: -f1 | rev)
+    for p in ${UDP[*]}; do
+        if [[ "$p" = "$port" ]]; then
+            prog=$(echo $l | cut -d/ -f2)
+            proto=$(echo $l | awk '{print $1}')
+            out <<EOF
+Aborted! The port $proto/$port is already in use by $prog
+Recommendation: remove this application or change its port
+EOF
+            exit 1
+        fi
+    done
+done
 
 
 # -----------------------------------------------------------------------------
