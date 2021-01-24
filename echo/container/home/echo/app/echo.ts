@@ -15,16 +15,16 @@ const app: Server = serve({
 
 // ----------------------------------------------------------------------------
 class BadRequest extends Error {
-  constructor(...params: any) {
-    super(...params);
+  constructor(msg: string) {
+    super(msg);
     this.name = "BadRequest";
   }
 }
 
 // ----------------------------------------------------------------------------
 class SubProcess extends Error {
-  constructor(...params: any) {
-    super(...params);
+  constructor(msg: string) {
+    super(msg);
     this.name = "SubProcess";
   }
 }
@@ -73,7 +73,7 @@ const notImplemented = (req: ServerRequest) =>
   });
 
 // ----------------------------------------------------------------------------
-async function parseQueryString(req: ServerRequest): Promise<URLSearchParams> {
+function parseQueryString(req: ServerRequest): URLSearchParams {
   const qs = req.url.match("[?].*$");
   if (!qs) throw new BadRequest("no query string");
 
@@ -81,10 +81,10 @@ async function parseQueryString(req: ServerRequest): Promise<URLSearchParams> {
 }
 
 // ----------------------------------------------------------------------------
-async function validateInput(
+function validateInput(
   req: ServerRequest,
   qs: URLSearchParams,
-): Promise<Echo> {
+): Echo {
   if (!req.headers.has("X-Forwarded-For")) {
     throw new BadRequest("remote_ip not found");
   }
@@ -102,7 +102,7 @@ async function validateInput(
 
   const port = qs.get("port");
   if (!port || !port.match("^[0-9]+$")) throw new BadRequest("invalid port");
-  const nport: number = Number(port);
+  const nport = Number(port);
   if (nport < 20 || nport > 65535) throw new BadRequest("port out of range");
 
   const text = qs.get("text");
@@ -148,23 +148,27 @@ async function echo(inp: Echo) {
 
 // ----------------------------------------------------------------------------
 async function triggerEcho(req: ServerRequest) {
-  parseQueryString(req)
-    .then((qs) => validateInput(req, qs))
-    .then((inp) => echo(inp))
-    .then(() => ok(req, "ok"))
-    .catch((e) => {
+  try {
+    const qs = parseQueryString(req);
+    const inp = validateInput(req, qs);
+    await echo(inp).then(() => ok(req, "ok"));
+  } catch (e) {
+    try {
       if (e.name === "BadRequest") badRequest(req);
       else if (e.name === "SubProcess") internalServerError(req);
       else notImplemented(req);
-    })
-    .catch((e) => {
-      req.conn.close();
-    })
-    .catch(() => {});
+    } catch (e) {
+      try {
+        req.conn.close();
+      } catch {
+        undefined;
+      }
+    }
+  }
 }
 
 // ----------------------------------------------------------------------------
-async function triggerReject(req: ServerRequest) {
+function triggerReject(req: ServerRequest) {
   forbidden(req)
     .catch((e) => {
       req.conn.close();
