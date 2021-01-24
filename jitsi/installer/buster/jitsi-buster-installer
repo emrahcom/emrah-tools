@@ -296,7 +296,7 @@ netstat -ltnp | egrep '^tcp' | while read -r l; do
             proto=$(echo $l | awk '{print $1}')
             out <<EOF
 Aborted! The port $proto/$port is already in use by $prog
-Recommendation: remove this application or change its port
+Recommendation: disable this application or change its port
 EOF
             exit 1
         fi
