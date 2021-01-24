@@ -10,7 +10,7 @@ export JITSI_TMPL=https://raw.githubusercontent.com/emrahcom/emrah-buster-templa
 export COMMON_TMPL=https://raw.githubusercontent.com/emrahcom/emrah-buster-base/master/machines/common
 export CHECKMYPORT=https://checkmyport.emrah.com
 export TCP=(80 443 4444 5222 5280 5269 5347 5349 8080 8888 9090)
-export UDP=(5349 10000)
+export UDP=(5000 5349 10000)
 
 
 # -----------------------------------------------------------------------------
