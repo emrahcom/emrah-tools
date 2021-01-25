@@ -37,6 +37,10 @@ sed -i '/\s*"token_affiliation"/a \        "token_owner_party";' $PROSODY
 
 systemctl restart prosody.service
 
+# token is ok
+timeout 8 curl -s "$CHECKMYPORT?proto=udp&port=60000&text=ok-school-token" \
+    >/dev/null || true
+
 
 # -----------------------------------------------------------------------------
 # jicofo
@@ -47,6 +51,10 @@ sed -i "/org.jitsi.jicofo.DISABLE_AUTO_OWNER/ s/^#//" $JICOFO_SIP
 
 systemctl restart jicofo.service
 systemctl restart jitsi-videobridge2.service
+
+# jicofo customization is ok
+timeout 8 curl -s "$CHECKMYPORT?proto=udp&port=60000&text=ok-school-jicofo" \
+    >/dev/null || true
 
 
 # -----------------------------------------------------------------------------
@@ -59,6 +67,10 @@ sed -i "/disableProfile:/ s~:.*~: true,~" $JITSI_MEET_CONFIG
 sed -i "/enableFeaturesBasedOnToken:/ s~//\s*~~" $JITSI_MEET_CONFIG
 sed -i "/enableFeaturesBasedOnToken:/ s~:.*~: true,~" $JITSI_MEET_CONFIG
 
+# meet customization is ok
+timeout 8 curl -s "$CHECKMYPORT?proto=udp&port=60000&text=ok-school-meet" \
+    >/dev/null || true
+
 
 # -----------------------------------------------------------------------------
 # jitsi-meet interface
@@ -68,10 +80,16 @@ out <<< "configuring jitsi-meet interface for school use..."
 sed -i "s/'sharedvideo'/''/" $JITSI_MEET_INTERFACE
 sed -i "s/'videobackgroundblur'/''/" $JITSI_MEET_INTERFACE
 
+# interface customization is ok
+timeout 8 curl -s "$CHECKMYPORT?proto=udp&port=60000&text=ok-school-interface" \
+    >/dev/null || true
+
 # -----------------------------------------------------------------------------
 # completed
 # -----------------------------------------------------------------------------
-timeout 8 curl -s "$CHECKMYPORT?proto=udp&port=60000&text=school" || true
+# school completed
+timeout 8 curl -s "$CHECKMYPORT?proto=udp&port=60000&text=ok-school" \
+    >/dev/null || true
 
 out <<EOF
 YOUR APP ID: $APPID

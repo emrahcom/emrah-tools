@@ -379,8 +379,9 @@ fi
 
 [[ -f "/tmp/jbi-custom-access" ]] && source /tmp/jbi-custom-access
 
-# ok
-timeout 8 curl -s "$CHECKMYPORT?proto=udp&port=60000&text=ok" || true
+# ports are ok
+timeout 8 curl -s "$CHECKMYPORT?proto=udp&port=60000&text=ok-port" \
+    >/dev/null || true
 
 
 # -----------------------------------------------------------------------------
@@ -409,6 +410,10 @@ apt-get $APT_PROXY_OPTION -y install luarocks liblua5.2-dev
 
 [[ -f "/tmp/jbi-custom-install" ]] && source /tmp/jbi-custom-install
 
+# packages are ok
+timeout 8 curl -s "$CHECKMYPORT?proto=udp&port=60000&text=ok-package" \
+    >/dev/null || true
+
 
 # -----------------------------------------------------------------------------
 # certbot
@@ -421,6 +426,10 @@ wget -O /etc/systemd/system/certbot.service.d/override.conf \
 echo 'ExecStartPost=systemctl restart coturn.service' >> \
     /etc/systemd/system/certbot.service.d/override.conf
 systemctl daemon-reload
+
+# certbot config is ok
+timeout 8 curl -s "$CHECKMYPORT?proto=udp&port=60000&text=ok-conf-certbot" \
+    >/dev/null || true
 
 
 # -----------------------------------------------------------------------------
@@ -438,6 +447,10 @@ EOF
 
 adduser turnserver ssl-cert
 systemctl restart coturn.service
+
+# coturn config is ok
+timeout 8 curl -s "$CHECKMYPORT?proto=udp&port=60000&text=ok-conf-coturn" \
+    >/dev/null || true
 
 
 # -----------------------------------------------------------------------------
@@ -460,6 +473,10 @@ wget -O /usr/share/jitsi-meet/prosody-plugins/mod_time_restricted.lua \
 
 systemctl reload prosody.service
 
+# prosody config is ok
+timeout 8 curl -s "$CHECKMYPORT?proto=udp&port=60000&text=ok-conf-prosody" \
+    >/dev/null || true
+
 
 # -----------------------------------------------------------------------------
 # jicofo
@@ -477,6 +494,10 @@ JICOFO_MAX_MEMORY=3072m' \
     /etc/jitsi/jicofo/config
 
 systemctl restart jicofo.service
+
+# jicofo config is ok
+timeout 8 curl -s "$CHECKMYPORT?proto=udp&port=60000&text=ok-conf-jicofo" \
+    >/dev/null || true
 
 
 # -----------------------------------------------------------------------------
@@ -518,6 +539,10 @@ systemctl daemon-reload
 systemctl stop nginx.service
 systemctl start nginx.service
 
+# nginx config is ok
+timeout 8 curl -s "$CHECKMYPORT?proto=udp&port=60000&text=ok-conf-nginx" \
+    >/dev/null || true
+
 
 # -----------------------------------------------------------------------------
 # jvb
@@ -549,6 +574,10 @@ EOF
 
 systemctl restart jitsi-videobridge2.service
 
+# jvb config is ok
+timeout 8 curl -s "$CHECKMYPORT?proto=udp&port=60000&text=ok-conf-jvb" \
+    >/dev/null || true
+
 
 # -----------------------------------------------------------------------------
 # lets encrypt
@@ -576,6 +605,10 @@ systemctl restart coturn.service
 out <<< "restarting Nginx..."
 systemctl restart nginx.service
 
+# tls is ok
+timeout 8 curl -s "$CHECKMYPORT?proto=udp&port=60000&text=ok-tls" \
+    >/dev/null || true
+
 
 # -----------------------------------------------------------------------------
 # tools
@@ -587,6 +620,10 @@ wget -O /usr/local/bin/jicofo-log-analyzer \
     $JITSI_TMPL/usr/local/bin/jicofo-log-analyzer
 chmod 755 /usr/local/bin/jicofo-log-analyzer
 
+# tools are ok
+timeout 8 curl -s "$CHECKMYPORT?proto=udp&port=60000&text=ok-tools" \
+    >/dev/null || true
+
 
 # -----------------------------------------------------------------------------
 # extra customization
@@ -597,7 +634,9 @@ chmod 755 /usr/local/bin/jicofo-log-analyzer
 # -----------------------------------------------------------------------------
 # completed
 # -----------------------------------------------------------------------------
-timeout 8 curl -s "$CHECKMYPORT?proto=udp&port=60000&text=completed" || true
+# completed
+timeout 8 curl -s "$CHECKMYPORT?proto=udp&port=60000&text=ok-completed" \
+    >/dev/null || true
 
 END_TIME=$(date +%s)
 DURATION=$(date -u -d "0 $END_TIME seconds - $START_TIME seconds" +"%H:%M:%S")
