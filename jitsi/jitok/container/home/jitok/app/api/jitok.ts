@@ -103,8 +103,8 @@ function createToken(inp: URLSearchParams): Token {
   const cont: Dict = {};
   const pl: Payload = {
     aud: "",
-    iss: "",
-    sub: "",
+    iss: "*",
+    sub: "*",
     room: "*",
     iat: getNumericDate(0),
     exp: getNumericDate(3600),
@@ -124,9 +124,27 @@ function createToken(inp: URLSearchParams): Token {
   if (inp.get("affi")) user["affiliation"] = String(inp.get("affi"));
   if (inp.get("avatar")) user["avatar"] = String(inp.get("avatar"));
   // payload.context.features
-  if (inp.get("rec")) feat["recording"] = Boolean(inp.get("rec"));
-  if (inp.get("live")) feat["livestreaming"] = Boolean(inp.get("live"));
-  if (inp.get("screen")) feat["screen-sharing"] = Boolean(inp.get("screen"));
+  if (inp.get("rec")) {
+    if (inp.get("rec") === "1" || inp.get("rec") === "true") {
+      feat["recording"] = true;
+    } else {
+      feat["recording"] = false;
+    }
+  }
+  if (inp.get("live")) {
+    if (inp.get("live") === "1" || inp.get("live") === "true") {
+      feat["livestreaming"] = true;
+    } else {
+      feat["livestreaming"] = false;
+    }
+  }
+  if (inp.get("screen")) {
+    if (inp.get("screen") === "1" || inp.get("screen") === "true") {
+      feat["screen-sharing"] = true;
+    } else {
+      feat["screen-sharing"] = false;
+    }
+  }
   // payload.context
   if (Object.keys(user).length) cont["user"] = user;
   if (Object.keys(feat).length) cont["features"] = feat;
