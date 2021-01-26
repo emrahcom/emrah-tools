@@ -85,9 +85,43 @@ function parseQueryString(req: ServerRequest): URLSearchParams {
 
 // ----------------------------------------------------------------------------
 function validateInput(qs: URLSearchParams): URLSearchParams {
+  // secret
   if (!qs.has("secret")) throw new BadRequest("secret not found");
   const secret = qs.get("secret");
-  if (!secret) throw new BadRequest("invalid secret");
+  if (!secret || !secret.match("^[0-9a-zA-Z_.!@#$*+-]+$")) {
+    throw new BadRequest("invalid secret");
+  }
+
+  // aud
+  if (!qs.has("aud")) throw new BadRequest("aud not found");
+  const aud = qs.get("aud");
+  if (!aud || !aud.match("^[0-9a-zA-Z_.-]+$")) {
+    throw new BadRequest("invalid aud");
+  }
+
+  // iss
+  const iss = qs.get("iss");
+  if (iss && !iss.match("^[*0-9a-zA-Z_.-]+$")) {
+    throw new BadRequest("invalid iss");
+  }
+
+  // sub
+  const sub = qs.get("sub");
+  if (sub && !sub.match("^[*0-9a-zA-Z_.-]+$")) {
+    throw new BadRequest("invalid sub");
+  }
+
+  // room
+  const room = qs.get("room");
+  if (room && !room.match("^[*0-9a-zA-Z _.-]+$")) {
+    throw new BadRequest("invalid room");
+  }
+
+  // exp (timezone?)
+  const exp = qs.get("exp");
+  if (exp && !exp.match("^[0-9]+$")) {
+    throw new BadRequest("invalid exp");
+  }
 
   return qs;
 }
@@ -100,7 +134,7 @@ function createToken(inp: URLSearchParams): Token {
   let secret = "";
   const user: Dict = {};
   const feat: Dict = {};
-  const cont: Dict = {};
+  const cntx: Dict = {};
   const pl: Payload = {
     aud: "",
     iss: "*",
@@ -146,9 +180,9 @@ function createToken(inp: URLSearchParams): Token {
     }
   }
   // payload.context
-  if (Object.keys(user).length) cont["user"] = user;
-  if (Object.keys(feat).length) cont["features"] = feat;
-  if (Object.keys(cont).length) pl["context"] = cont;
+  if (Object.keys(user).length) cntx["user"] = user;
+  if (Object.keys(feat).length) cntx["features"] = feat;
+  if (Object.keys(cntx).length) pl["context"] = cntx;
 
   return {
     header: { alg: alg, typ: "JWT" },
@@ -176,7 +210,6 @@ async function triggerJWT(req: ServerRequest) {
     await createJWT(tk).then((jwt) => ok(req, jwt));
   } catch (e) {
     try {
-      console.log(e);
       if (e.name === "BadRequest") badRequest(req);
       else notImplemented(req);
     } catch (e) {
