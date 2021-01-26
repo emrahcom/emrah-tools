@@ -34,8 +34,8 @@ interface Dict {
 
 // ----------------------------------------------------------------------------
 class BadRequest extends Error {
-  constructor(...params: any) {
-    super(...params);
+  constructor(msg: string) {
+    super(msg);
     this.name = "BadRequest";
   }
 }
@@ -76,7 +76,7 @@ const notImplemented = (req: ServerRequest) =>
   });
 
 // ----------------------------------------------------------------------------
-async function parseQueryString(req: ServerRequest): Promise<URLSearchParams> {
+function parseQueryString(req: ServerRequest): URLSearchParams {
   const qs = req.url.match("[?].*$");
   if (!qs) throw new BadRequest("no query string");
 
@@ -84,7 +84,7 @@ async function parseQueryString(req: ServerRequest): Promise<URLSearchParams> {
 }
 
 // ----------------------------------------------------------------------------
-async function validateInput(qs: URLSearchParams): Promise<URLSearchParams> {
+function validateInput(qs: URLSearchParams): URLSearchParams {
   if (!qs.has("secret")) throw new BadRequest("secret not found");
   const secret = qs.get("secret");
   if (!secret) throw new BadRequest("invalid secret");
@@ -93,15 +93,15 @@ async function validateInput(qs: URLSearchParams): Promise<URLSearchParams> {
 }
 
 // ----------------------------------------------------------------------------
-async function createToken(inp: URLSearchParams): Promise<Token> {
+function createToken(inp: URLSearchParams): Token {
   let alg: Algorithm = "HS512";
   if (inp.get("alg") === "HS256") alg = "HS256";
 
-  let secret: string = "";
-  let user: Dict = {};
-  let feat: Dict = {};
-  let cont: Dict = {};
-  let pl: Payload = {
+  let secret = "";
+  const user: Dict = {};
+  const feat: Dict = {};
+  const cont: Dict = {};
+  const pl: Payload = {
     aud: "",
     iss: "",
     sub: "",
@@ -151,24 +151,28 @@ async function createJWT(tk: Token): Promise<string> {
 
 // ----------------------------------------------------------------------------
 async function triggerJWT(req: ServerRequest) {
-  parseQueryString(req)
-    .then((qs) => validateInput(qs))
-    .then((inp) => createToken(inp))
-    .then((tk) => createJWT(tk))
-    .then((jwt) => ok(req, jwt))
-    .catch((e) => {
+  try {
+    const qs = parseQueryString(req);
+    const inp = validateInput(qs);
+    const tk = createToken(inp);
+    await createJWT(tk).then((jwt) => ok(req, jwt));
+  } catch (e) {
+    try {
       console.log(e);
       if (e.name === "BadRequest") badRequest(req);
       else notImplemented(req);
-    })
-    .catch((e) => {
-      req.conn.close();
-    })
-    .catch(() => {});
+    } catch (e) {
+      try {
+        req.conn.close();
+      } catch {
+        undefined;
+      }
+    }
+  }
 }
 
 // ----------------------------------------------------------------------------
-async function triggerReject(req: ServerRequest) {
+function triggerReject(req: ServerRequest) {
   forbidden(req)
     .catch((e) => {
       req.conn.close();
