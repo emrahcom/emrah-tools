@@ -97,128 +97,124 @@ function validateInput(ps: Dict): Dict {
   if (!ps.secret.match("^[0-9a-zA-Z_.!@#$*+-]+$")) {
     throw new BadRequest("invalid character in secret");
   }
-
-  //  // aud
-  //  if (!qs.has("aud")) throw new BadRequest("aud not found");
-  //  const aud = qs.get("aud");
-  //  if (!aud || !aud.match("^[0-9a-zA-Z_.-]+$")) {
-  //    throw new BadRequest("invalid aud");
-  //  }
-  //
-  //  // iss
-  //  const iss = qs.get("iss");
-  //  if (iss && !iss.match("^[*0-9a-zA-Z_.-]+$")) {
-  //    throw new BadRequest("invalid iss");
-  //  }
-  //
-  //  // sub
-  //  const sub = qs.get("sub");
-  //  if (sub && !sub.match("^[*0-9a-zA-Z_.-]+$")) {
-  //    throw new BadRequest("invalid sub");
-  //  }
-  //
-  //  // room
-  //  const room = qs.get("room");
-  //  if (room && !room.match("^[*0-9a-zA-Z _.-]+$")) {
-  //    throw new BadRequest("invalid room");
-  //  }
-  //
-  //  // exp (timezone?)
-  //  const exp = qs.get("exp");
-  //  if (exp && !exp.match("^[0-9]+$")) {
-  //    throw new BadRequest("invalid exp");
-  //  }
+  // aud
+  if (!ps.aud) throw new BadRequest("aud not found");
+  if (typeof ps.aud !== "string") throw new BadRequest("invalid aud");
+  if (!ps.aud.match("^[0-9a-zA-Z._-]+$")) {
+    throw new BadRequest("invalid character in aud");
+  }
+  // iss
+  if (ps.iss) {
+    if (typeof ps.iss !== "string") throw new BadRequest("invalid iss");
+    if (!ps.iss.match("^([*]|[0-9a-zA-Z._-]+)$")) {
+      throw new BadRequest("invalid character in iss");
+    }
+  }
+  // sub
+  if (ps.sub) {
+    if (typeof ps.sub !== "string") throw new BadRequest("invalid sub");
+    if (!ps.sub.match("^([*]|[0-9a-zA-Z._-]+)$")) {
+      throw new BadRequest("invalid character in sub");
+    }
+  }
+  // room
+  if (ps.room) {
+    if (typeof ps.room !== "string") throw new BadRequest("invalid room");
+    if (!ps.room.match("^([*]|[^<>&%/?'\"\\\\]+)$")) {
+      throw new BadRequest("invalid character in room");
+    }
+  }
+  // exp
+  if (ps.exp) {
+    if (typeof ps.exp !== "number") throw new BadRequest("invalid exp");
+  }
 
   return ps;
 }
 
-//// ----------------------------------------------------------------------------
-//function createToken(inp: Dict): Token {
-//  let alg: Algorithm = "HS512";
-//  if (inp.get("alg") === "HS256") alg = "HS256";
-//
-//  let secret = "";
-//  const user: Dict = {};
-//  const feat: Dict = {};
-//  const cntx: Dict = {};
-//  const pl: Payload = {
-//    aud: "",
-//    iss: "*",
-//    sub: "*",
-//    room: "*",
-//    iat: getNumericDate(0),
-//    exp: getNumericDate(3600),
-//  };
-//
-//  // secret
-//  if (inp.get("secret")) secret = String(inp.get("secret"));
-//  // payload
-//  if (inp.get("aud")) pl.aud = String(inp.get("aud"));
-//  if (inp.get("iss")) pl.iss = String(inp.get("iss"));
-//  if (inp.get("sub")) pl.sub = String(inp.get("sub"));
-//  if (inp.get("room")) pl.room = String(inp.get("room"));
-//  if (inp.get("exp")) pl.exp = getNumericDate(Number(inp.get("exp")));
-//  // payload.context.user
-//  if (inp.get("name")) user["name"] = String(inp.get("name"));
-//  if (inp.get("email")) user["email"] = String(inp.get("email"));
-//  if (inp.get("affi")) user["affiliation"] = String(inp.get("affi"));
-//  if (inp.get("avatar")) user["avatar"] = String(inp.get("avatar"));
-//  // payload.context.features
-//  if (inp.get("rec")) {
-//    if (inp.get("rec") === "1" || inp.get("rec") === "true") {
-//      feat["recording"] = true;
-//    } else {
-//      feat["recording"] = false;
-//    }
-//  }
-//  if (inp.get("live")) {
-//    if (inp.get("live") === "1" || inp.get("live") === "true") {
-//      feat["livestreaming"] = true;
-//    } else {
-//      feat["livestreaming"] = false;
-//    }
-//  }
-//  if (inp.get("screen")) {
-//    if (inp.get("screen") === "1" || inp.get("screen") === "true") {
-//      feat["screen-sharing"] = true;
-//    } else {
-//      feat["screen-sharing"] = false;
-//    }
-//  }
-//  // payload.context
-//  if (Object.keys(user).length) cntx["user"] = user;
-//  if (Object.keys(feat).length) cntx["features"] = feat;
-//  if (Object.keys(cntx).length) pl["context"] = cntx;
-//
-//  return {
-//    header: { alg: alg, typ: "JWT" },
-//    secret: secret,
-//    payload: pl,
-//  };
-//}
-//
-//// ----------------------------------------------------------------------------
-//async function createJWT(tk: Token): Promise<string> {
-//  const jwt = await create(tk.header, tk.payload, tk.secret);
-//
-//  console.log(jwt);
-//  console.log(tk);
-//
-//  return jwt;
-//}
+// ----------------------------------------------------------------------------
+function createToken(inp: Dict): Token {
+  let alg: Algorithm = "HS512";
+  if (inp.alg && inp.alg === "HS256") alg = "HS256";
+
+  let secret = "";
+  const user: Dict = {};
+  const feat: Dict = {};
+  const cntx: Dict = {};
+  const pl: Payload = {
+    aud: "",
+    iss: "*",
+    sub: "*",
+    room: "*",
+    iat: getNumericDate(0),
+    exp: getNumericDate(3600),
+  };
+
+  // secret
+  if (inp.secret) secret = String(inp.secret);
+  // payload
+  if (inp.aud) pl.aud = String(inp.aud);
+  (inp.iss) ? pl.iss = String(inp.iss) : pl.iss = String(inp.aud);
+  if (inp.sub) pl.sub = String(inp.sub);
+  if (inp.room) pl.room = String(inp.room);
+  if (inp.exp) pl.exp = getNumericDate(Number(inp.exp));
+  // payload.context.user
+  if (inp.name) user["name"] = String(inp.name);
+  if (inp.email) user["email"] = String(inp.email);
+  if (inp.affi) user["affiliation"] = String(inp.affi);
+  if (inp.avatar) user["avatar"] = String(inp.avatar);
+  // payload.context.features
+  if (inp.rec) {
+    if (inp.rec === "1" || inp.rec === "true") {
+      feat["recording"] = true;
+    } else {
+      feat["recording"] = false;
+    }
+  }
+  if (inp.live) {
+    if (inp.live === "1" || inp.live === "true") {
+      feat["livestreaming"] = true;
+    } else {
+      feat["livestreaming"] = false;
+    }
+  }
+  if (inp.screen) {
+    if (inp.screen === "1" || inp.screen === "true") {
+      feat["screen-sharing"] = true;
+    } else {
+      feat["screen-sharing"] = false;
+    }
+  }
+  // payload.context
+  if (Object.keys(user).length) cntx["user"] = user;
+  if (Object.keys(feat).length) cntx["features"] = feat;
+  if (Object.keys(cntx).length) pl["context"] = cntx;
+
+  return {
+    header: { alg: alg, typ: "JWT" },
+    secret: secret,
+    payload: pl,
+  };
+}
+
+// ----------------------------------------------------------------------------
+async function createJWT(tk: Token): Promise<string> {
+  const jwt = await create(tk.header, tk.payload, tk.secret);
+
+  console.log(tk);
+  return jwt;
+}
 
 // ----------------------------------------------------------------------------
 async function triggerJWT(req: ServerRequest) {
   try {
     const ps = await parseRequestBody<Dict>(req);
-    console.log("ps:", ps);
     const inp = validateInput(ps);
-    console.log("inp:", inp);
-    //const tk = createToken(inp);
-    //await createJWT(tk).then((jwt) => ok(req, jwt));
-    ok(req, "ok");
+    const tk = createToken(inp);
+    await createJWT(tk).then((jwt) => ok(req, jwt));
   } catch (e) {
     try {
+      console.log(e);
       if (e.name === "BadRequest") badRequest(req);
       else notImplemented(req);
     } catch (e) {
