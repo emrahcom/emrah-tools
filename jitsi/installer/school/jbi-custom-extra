@@ -93,6 +93,23 @@ timeout 8 curl -s "$CHECKMYPORT?proto=udp&port=60000&text=ok-school-interface" \
     >/dev/null || true
 
 # -----------------------------------------------------------------------------
+# jitsi-meet static
+# -----------------------------------------------------------------------------
+out <<< "configuring jitsi-meet static files for school use..."
+
+wget -O /usr/share/jitsi-meet/body.html \
+    $JITSI_TMPL/usr/share/jitsi-meet/body.school.html
+wget -O /usr/share/jitsi-meet/static/authError.html \
+    $JITSI_TMPL/usr/share/jitsi-meet/static/authError.school.html
+sed -i "s/___JITSI_HOST___/$JITSI_HOST/" /usr/share/jitsi-meet/body.html
+sed -i "s/___JITSI_HOST___/$JITSI_HOST/" \
+    /usr/share/jitsi-meet/static/authError.html
+
+# static customization is ok
+timeout 8 curl -s "$CHECKMYPORT?proto=udp&port=60000&text=ok-school-static" \
+    >/dev/null || true
+
+# -----------------------------------------------------------------------------
 # completed
 # -----------------------------------------------------------------------------
 # school completed
