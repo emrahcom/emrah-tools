@@ -266,7 +266,7 @@ fi
 
 # turn host A record
 out <<< "checking DNS record for $TURN_HOST..."
-IP=$(host $TURN_HOST | grep "has address" | awk '{print $4}' || true)
+IP=$(dig -4 +short $TURN_HOST @resolver1.opendns.com) || true
 if [[ -z "$IP" ]]; then
     out <<EOF
 Aborted! $TURN_HOST is not resolvable
