@@ -245,7 +245,7 @@ fi
 
 # jitsi host A record
 out <<< "checking DNS record for $JITSI_HOST..."
-IP=$(host $JITSI_HOST | grep "has address" | awk '{print $4}' || true)
+IP=$(dig -4 +short $JITSI_HOST @resolver1.opendns.com) || true
 if [[ -z "$IP" ]]; then
     out <<EOF
 Aborted! $JITSI_HOST is not resolvable
