@@ -211,8 +211,12 @@ for i in $(seq 3); do
     apt-get -y --allow-releaseinfo-change update && sleep 3 && break
 done
 
-apt-get $APT_PROXY_OPTION -y install apt-utils
-apt-get $APT_PROXY_OPTION -y dist-upgrade
+apt-get $APT_PROXY_OPTION -y install apt-utils \
+    -o Dpkg::Options::="--force-confdef" \
+    -o Dpkg::Options::="--force-confold"
+apt-get $APT_PROXY_OPTION -y dist-upgrade \
+    -o Dpkg::Options::="--force-confdef" \
+    -o Dpkg::Options::="--force-confold"
 apt-get $APT_PROXY_OPTION -y install wget curl ca-certificates openssl
 apt-get $APT_PROXY_OPTION -y install apt-transport-https gnupg
 apt-get $APT_PROXY_OPTION -y install iputils-ping dnsutils

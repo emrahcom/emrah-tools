@@ -9,7 +9,9 @@ SIR=https://raw.githubusercontent.com/emrahcom/emrah-tools/main/jitsi/installer/
 
 export APT_PROXY_OPTION=$APT_PROXY_OPTION
 export DEBIAN_FRONTEND=noninteractive
-apt-get $APT_PROXY_OPTION -y install wget ca-certificates
+apt-get $APT_PROXY_OPTION -y install wget ca-certificates \
+    -o Dpkg::Options::="--force-confdef" \
+    -o Dpkg::Options::="--force-confold"
 
 wget -O /tmp/jitsi-buster-installer $BIR/jitsi-buster-installer
 wget -O /tmp/jbi-custom-extra $SIR/jbi-custom-extra
