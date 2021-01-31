@@ -214,7 +214,7 @@ done
 apt-get $APT_PROXY_OPTION -y install apt-utils \
     -o Dpkg::Options::="--force-confdef" \
     -o Dpkg::Options::="--force-confold"
-apt-get $APT_PROXY_OPTION -y dist-upgrade \
+apt-get $APT_PROXY_OPTION -y upgrade \
     -o Dpkg::Options::="--force-confdef" \
     -o Dpkg::Options::="--force-confold"
 apt-get $APT_PROXY_OPTION -y install wget curl ca-certificates openssl
