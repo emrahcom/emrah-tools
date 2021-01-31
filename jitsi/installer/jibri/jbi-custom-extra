@@ -106,6 +106,16 @@ sed -i 's~//\s*liveStreamingEnabled:.*~liveStreamingEnabled: true,~' \
 sed -i "/liveStreamingEnabled:/a \\\n    hiddenDomain: 'recorder.$JITSI_HOST'," \
     $JITSI_MEET_CONFIG
 
+# icewm
+mkdir -p /home/jibri/.icewm
+cat > /home/jibri/.icewm/startup <<EOF
+#!/bin/bash
+
+chromium https://$JITSI_HOST &
+(sleep 20 && pkill --oldest --signal TERM chromium) &
+EOF
+chmod 755 /home/jibri/.icewm/startup
+
 # jibri
 usermod -aG adm,audio,video,plugdev jibri
 mkdir -p /usr/local/eb/recordings
