@@ -32,7 +32,7 @@ if [[ -z "$(grep snd_aloop /proc/modules)" ]]; then
     out <<EOF
 Aborted! This kernel ($(uname -r)) does not support snd_aloop module.
 Recommendation: Install the standard Linux kernel package and reboot with it.
-                Probably it's "$KERNEL" in your case.
+                Probably it's the "$KERNEL" package in your case.
 EOF
     exit 1
 fi
