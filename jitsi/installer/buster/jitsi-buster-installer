@@ -245,7 +245,7 @@ fi
 
 # jitsi host A record
 out <<< "checking DNS record for $JITSI_HOST..."
-IP=$(dig -4 +short $JITSI_HOST @resolver1.opendns.com) || true
+IP=$(dig -4 +short $JITSI_HOST @resolver1.opendns.com | tail -1) || true
 if [[ -z "$IP" ]]; then
     out <<EOF
 Aborted! $JITSI_HOST is not resolvable
@@ -266,7 +266,7 @@ fi
 
 # turn host A record
 out <<< "checking DNS record for $TURN_HOST..."
-IP=$(dig -4 +short $TURN_HOST @resolver1.opendns.com) || true
+IP=$(dig -4 +short $TURN_HOST @resolver1.opendns.com | tail -1) || true
 if [[ -z "$IP" ]]; then
     out <<EOF
 Aborted! $TURN_HOST is not resolvable
