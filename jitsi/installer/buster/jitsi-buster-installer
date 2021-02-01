@@ -248,8 +248,8 @@ out <<< "checking DNS record for $JITSI_HOST..."
 IP=$(dig -4 +short $JITSI_HOST @resolver1.opendns.com | tail -1) || true
 if [[ -z "$IP" ]]; then
     out <<EOF
-Aborted! $JITSI_HOST is not resolvable
-Recommendation: Set DNS A record for $JITSI_HOST
+Aborted! $JITSI_HOST is not resolvable on Internet
+Recommendation: Set DNS A record for $JITSI_HOST on a public DNS
 EOF
     exit 1
 fi
@@ -269,8 +269,8 @@ out <<< "checking DNS record for $TURN_HOST..."
 IP=$(dig -4 +short $TURN_HOST @resolver1.opendns.com | tail -1) || true
 if [[ -z "$IP" ]]; then
     out <<EOF
-Aborted! $TURN_HOST is not resolvable
-Recommendation: Set DNS CNAME or A record for $TURN_HOST
+Aborted! $TURN_HOST is not resolvable on Internet
+Recommendation: Set DNS CNAME or A record for $TURN_HOST on a public DNS
 EOF
     exit 1
 fi
