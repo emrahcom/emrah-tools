@@ -38,7 +38,7 @@ apt-get $APT_PROXY_OPTION -y --install-recommends install ffmpeg
         chromium chromium-driver || \
     apt-get $APT_PROXY_OPTION -y --install-recommends install \
         chromium-browser chromium-chromedriver
-apt-get $APT_PROXY_OPTION -y install stunnel
+apt-get $APT_PROXY_OPTION -y install stunnel x11vnc
 apt-get $APT_PROXY_OPTION -y install jibri
 
 apt-get -y purge upower
@@ -111,6 +111,9 @@ mkdir -p /home/jibri/.icewm
 cat > /home/jibri/.icewm/startup <<EOF
 #!/bin/bash
 
+#x11vnc -display :0 -autoport 9900 -noipv6 -nolookup -once -loop \
+#    -usepw -shared -noxdamage -nodpms -tag vnc-jibri &
+
 chromium https://$JITSI_HOST &
 (sleep 20 && pkill --oldest --signal TERM chromium) &
 EOF
@@ -140,6 +143,11 @@ wget -O /etc/systemd/system/jibri.service.d/override.conf \
 systemctl daemon-reload
 systemctl enable jibri.service
 systemctl start jibri.service
+
+# jibri vnc
+mkdir -p /home/jibri/.vnc
+x11vnc -storepasswd jibri /home/jibri/.vnc/passwd
+chown jibri:jibri /home/jibri/.vnc -R
 
 # jibri configuration is ok
 timeout 8 curl -s "$CHECKMYPORT?proto=udp&port=60000&text=ok-conf-jibri" \
