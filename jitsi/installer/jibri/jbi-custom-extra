@@ -111,7 +111,7 @@ mkdir -p /home/jibri/.icewm
 cat > /home/jibri/.icewm/startup <<EOF
 #!/bin/bash
 
-#x11vnc -display :0 -autoport 9900 -noipv6 -nolookup -once -loop \
+#x11vnc -display :0 -autoport 9900 -noipv6 -nolookup -once -loop \\
 #    -usepw -shared -noxdamage -nodpms -tag vnc-jibri &
 
 chromium https://$JITSI_HOST &
