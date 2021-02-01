@@ -177,13 +177,23 @@ fi
 # -----------------------------------------------------------------------------
 out <<< "removing the old installation if exists..."
 
-apt-get -y purge 'jitsi-*' || true
-apt-get -y purge jicofo || true
+systemctl stop jibri-xorg.service || true
+systemctl stop jigasi.service || true
+systemctl stop jitsi-videobridge2.service || true
+systemctl stop jicofo.service || true
+systemctl stop prosody.service || true
+systemctl stop coturn.service || true
+systemctl stop stunnel4.service || true
+systemctl stop nginx.service || true
+
 apt-get -y purge jibri || true
 apt-get -y purge jigasi || true
+apt-get -y purge 'jitsi-*' || true
+apt-get -y purge jicofo || true
 apt-get -y purge prosody || true
 apt-get -y purge 'prosody-*' || true
 apt-get -y purge coturn || true
+apt-get -y purge stunnel || true
 apt-get -y purge nginx || true
 apt-get -y purge 'nginx-*' || true
 apt-get -y purge 'openjdk-*' || true
@@ -192,21 +202,19 @@ apt-get -y purge chromium chromium-driver || true
 apt-get -y purge chromium-browser chromium-chromedriver || true
 apt-get -y purge chromium-codecs-ffmpeg chromium-codecs-ffmpeg-extra || true
 apt-get -y purge va-driver-all vdpau-driver-all || true
-apt-get -y purge stunnel || true
 apt-get -y autoremove --purge
 
 deluser jibri || true
 
+rm -rf /home/jibri
 rm -rf /etc/jitsi
 rm -rf /etc/prosody
 rm -rf /etc/nginx
 rm -rf /usr/share/jitsi-meet
 rm -rf /usr/share/jitsi-videobridge
 rm -rf /usr/share/jicofo
-rm -rf /home/jibri
 rm -f  /etc/apt/sources.list.d/stretch.list
 rm -f  /etc/apt/sources.list.d/jitsi-stable.list
-
 
 [[ -f "/tmp/jbi-custom-purge" ]] && source /tmp/jbi-custom-purge
 
