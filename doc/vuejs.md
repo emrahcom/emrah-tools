@@ -1,6 +1,15 @@
 Vue.js
 ======
 
+## purge old nodejs
+
+```bash
+apt-get purge nodejs
+
+rm -rf /usr/lib/node_modules
+rm -rf /usr/local/lib/node_modules
+```
+
 ## install nodejs
 
 ```bash
@@ -15,6 +24,14 @@ node --version
 npm --version
 ```
 
+## npm update
+DON'T upgrade or install!
+
+```bash
+npm update -g npm
+npm --version
+```
+
 ## install vue-cli
 
 ```bash
@@ -23,14 +40,6 @@ npm install -g @vue/cli-service-global
 npm install -g @vue/compiler-sfc
 
 vue --version
-```
-
-## upgrade vue-cli
-
-```bash
-npm update -g @vue/cli
-npm update -g @vue/cli-service-global
-npm update -g @vue/compiler-sfc
 ```
 
 ## create project
@@ -43,6 +52,8 @@ vue create project-name
       > Babel
       > TypeScript
       > Linter / Formatter
+        > ESLint + Prettier
+    > config in package.json
 ```
 
 or
@@ -52,19 +63,23 @@ vue ui
 chromium http://localhost:8000
 ```
 
-## first app
-
-*App.vue*
-
-```html
-<template>
-  <h1>Hello!</h1>
-</template>
-```
-
-## run server
+## public & sources
 
 ```bash
+ls project-name/public/
+ls project-name/src/
+```
+
+## run serve
+
+```bash
+cd project-name
+npm run serve
+```
+
+```bash
+cd project-name/src/
+vue serve
 vue serve App.vue
 chromium http://localhost:8080/
 ```
@@ -73,18 +88,4 @@ chromium http://localhost:8080/
 
 ```bash
 vue upgrade
-```
-
-## build app
-
-```bash
-vue build App.vue
-```
-
-
-## add plugin
-
-```bash
-vue add apollo
-vue add @foo/bar
 ```
