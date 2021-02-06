@@ -1,9 +1,9 @@
 <template>
-  <div class="hello">
+  <div class="jitok">
     <h1>{{ msg }}</h1>
-    <p>
-      Jitok contents will be here
-    </p>
+    secret: <input type="text" v-model="secret" /><br />
+    aud: <input type="text" v-model="aud" /><br />
+    <h1>{{ secret }} {{ aud }}</h1>
   </div>
 </template>
 
@@ -14,6 +14,30 @@ export default defineComponent({
   name: "Jitok",
   props: {
     msg: String
+  },
+  data() {
+    return {
+      alg: "HS512",
+      secret: "mysecret",
+      aud: "myapp",
+      iss: "",
+      sub: "",
+      room: "",
+      exp: 3600,
+      cntx: {
+        user: {
+          name: "",
+          email: "",
+          affi: "",
+          avatar: "",
+        },
+        feat: {
+          rec: undefined
+          live: undefined,
+          screen: undefined
+        }
+      }
+    }
   }
 });
 </script>

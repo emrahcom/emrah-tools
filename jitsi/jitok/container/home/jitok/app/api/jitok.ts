@@ -143,7 +143,7 @@ function createToken(inp: Dict): Token {
   const cntx: Dict = {};
   const pl: Payload = {
     aud: "",
-    iss: "*",
+    iss: "",
     sub: "*",
     room: "*",
     iat: getNumericDate(0),
