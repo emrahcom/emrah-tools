@@ -1,16 +1,16 @@
 <template>
-  <img alt="Vue logo" src="./assets/logo.png" />
-  <HelloWorld msg="Welcome to Your Vue.js + TypeScript App" />
+  <img alt="logo" src="./assets/logo.png" />
+  <Jitok msg="Welcome to Jitok" />
 </template>
 
 <script lang="ts">
 import { defineComponent } from "vue";
-import HelloWorld from "./components/HelloWorld.vue";
+import Jitok from "./components/Jitok.vue";
 
 export default defineComponent({
   name: "App",
   components: {
-    HelloWorld
+    Jitok
   }
 });
 </script>
