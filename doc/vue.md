@@ -63,11 +63,14 @@ vue ui
 chromium http://localhost:8000
 ```
 
-## public & sources
+## customize
 
 ```bash
-ls project-name/public/
-ls project-name/src/
+cd proje-name
+rm -rf .git                  # if it's already in a git repo
+                             # compare .gitignore files
+ln -s ../node_modules src/   # src klasorunde vue ile calisilacaksa...
+                             # npm ile calismak daha uygun gorunuyor
 ```
 
 ## run serve
@@ -77,11 +80,11 @@ cd project-name
 npm run serve
 ```
 
+## lint
+
 ```bash
-cd project-name/src/
-vue serve
-vue serve App.vue
-chromium http://localhost:8080/
+cd project-name
+npm run lint
 ```
 
 ## upgrade app
