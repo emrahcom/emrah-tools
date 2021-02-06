@@ -3,9 +3,9 @@
     <h1>{{ msg }}</h1>
     secret: <input type="text" v-model="secret" /><br />
     aud: <input type="text" v-model="aud" /><br />
-    <button v-on:click="getToken">token</button>
-    <h1>{{ token }}</h1>
-    <h1>{{ secret }} {{ aud }}</h1>
+    <button v-on:click="getToken">token</button><br />
+    <span>{{ token }}</span> <br />
+    <span>{{ secret }} {{ aud }}</span>
   </div>
 </template>
 
