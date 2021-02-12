@@ -43,8 +43,27 @@ export default defineComponent({
     };
   },
   methods: {
-    getToken() {
-      this.token = "mytoken";
+    async getToken() {
+      const payload = {
+        secret: "mysecret",
+        aud: "myapp"
+      };
+
+      const headers = new Headers({
+        Accept: "application/json",
+        "Content-Type": "application/json"
+      });
+
+      const req = new Request("https://jitok.emrah.com/api", {
+        method: "POST",
+        headers: headers,
+        mode: "no-cors",
+        body: JSON.stringify(payload)
+      });
+
+      await fetch(req)
+        .then(res => res.json())
+        .then(data => { this.token = data; });
     }
   }
 });
