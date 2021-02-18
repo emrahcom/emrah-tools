@@ -110,6 +110,34 @@ timeout 8 curl -s "$CHECKMYPORT?proto=udp&port=60000&text=ok-school-static" \
     >/dev/null || true
 
 # -----------------------------------------------------------------------------
+# JWT tools
+# -----------------------------------------------------------------------------
+apt-get $APT_PROXY_OPTION -y install php-cli composer
+
+cd /tmp
+rm -rf /tmp/vendor
+composer -qn require firebase/php-jwt
+cd -
+
+mkdir -p /root/jwt
+mv /tmp/vendor .
+wget -O /root/jwt/README.md $TOOLS/jitsi/jwt/README.md
+wget -O /root/jwt/teacher.php $TOOLS/jitsi/jwt/teacher.php
+wget -O /root/jwt/student.php $TOOLS/jitsi/jwt/student.php
+
+sed -i "s/___JITSI_HOST___/$JITSI_HOST/" /root/jwt/teacher.php
+sed -i "s/___APPSECRET___/$APPSECRET/" /root/jwt/teacher.php
+sed -i "s/___APPID___/$APPID/" /root/jwt/teacher.php
+
+sed -i "s/___JITSI_HOST___/$JITSI_HOST/" /root/jwt/student.php
+sed -i "s/___APPSECRET___/$APPSECRET/" /root/jwt/student.php
+sed -i "s/___APPID___/$APPID/" /root/jwt/student.php
+
+# JWT tools are ok
+timeout 8 curl -s "$CHECKMYPORT?proto=udp&port=60000&text=ok-school-jwt" \
+    >/dev/null || true
+
+# -----------------------------------------------------------------------------
 # completed
 # -----------------------------------------------------------------------------
 # school completed
