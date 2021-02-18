@@ -120,7 +120,7 @@ composer -qn require firebase/php-jwt
 cd -
 
 mkdir -p /root/jwt
-mv /tmp/vendor .
+cp -arp /tmp/vendor /root/jwt/
 wget -O /root/jwt/README.md $TOOLS/jitsi/jwt/README.md
 wget -O /root/jwt/teacher.php $TOOLS/jitsi/jwt/teacher.php
 wget -O /root/jwt/student.php $TOOLS/jitsi/jwt/student.php
