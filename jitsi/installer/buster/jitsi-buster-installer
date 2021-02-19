@@ -206,6 +206,7 @@ apt-get -y purge va-driver-all vdpau-driver-all || true
 apt-get -y autoremove --purge
 
 deluser jibri || true
+delgroup jibri || true
 
 rm -rf /home/jibri
 rm -rf /etc/jitsi
