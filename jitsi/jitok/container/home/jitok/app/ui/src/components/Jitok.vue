@@ -63,7 +63,9 @@ export default defineComponent({
 
       await fetch(req)
         .then(res => res.json())
-        .then(data => { this.token = data; });
+        .then(data => {
+          this.token = data;
+        });
     }
   }
 });
