@@ -69,8 +69,8 @@ chromium http://localhost:8000
 cd proje-name
 rm -rf .git                  # if it's already in a git repo
                              # compare .gitignore files
-ln -s ../node_modules src/   # src klasorunde vue ile calisilacaksa...
-                             # npm ile calismak daha uygun gorunuyor
+ln -s ../node_modules src/   # do this if the vue command will be used
+                             # but npm seems more stable
 ```
 
 ## run serve
