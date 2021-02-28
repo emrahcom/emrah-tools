@@ -87,6 +87,13 @@ cd project-name
 npm run lint
 ```
 
+## deployment
+
+```bash
+npm run build
+cp -arp dist /var/www/html
+```
+
 ## upgrade app
 
 ```bash
