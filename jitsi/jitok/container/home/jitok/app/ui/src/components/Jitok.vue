@@ -16,7 +16,14 @@
     username: <input type="text" v-model="cntx.user.name" /><br />
     email: <input type="text" v-model="cntx.user.email" /><br />
     avatar: <input type="text" v-model="cntx.user.avatar" /><br />
-    affiliation: <input type="text" v-model="cntx.user.affi" /><br />
+    affiliation:<br />
+    <input type="radio" v-model="cntx.user.affi" value="owner" />
+    <label>owner</label><br />
+    <input type="radio" v-model="cntx.user.affi" value="member" />
+    <label>member</label><br />
+    <input type="radio" v-model="cntx.user.affi" value="" />
+    <label>don&apos;t set</label><br />
+    <br />
     recording:<br />
     <input type="radio" v-model="cntx.feat.rec" value="1" />
     <label>enabled</label><br />
