@@ -67,8 +67,10 @@ out <<< "installing jibri configuration..."
 [[ -z "$(egrep '^snd_aloop' /etc/modules)" ]] && echo snd_aloop >>/etc/modules
 
 # hosts
-sed -i "/127.0.2.1/d" /etc/hosts
-sed -i "/127.0.0.1/a 127.0.2.1 $JITSI_HOST" /etc/hosts
+sed -i -E "s/(\s)$JITSI_HOST/\1/" /etc/hosts
+sed -i -E "/^[0-9.]+\s*$/d" /etc/hosts
+sed -i "/127.0.2.1\s/d" /etc/hosts
+sed -i "$ a 127.0.2.1 $JITSI_HOST" /etc/hosts
 
 # chromium
 mkdir -p /etc/chromium/policies/managed
