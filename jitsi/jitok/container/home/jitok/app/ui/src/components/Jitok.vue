@@ -153,7 +153,10 @@ export default defineComponent({
 
       this.tokenClass = "outdatedToken";
       await fetch(req)
-        .then(async res => await res.text())
+        .then(async res => {
+          if (!res.ok) throw new Error("invalid token");
+          return await res.text();
+        })
         .then(data => {
           this.tokenClass = "validToken";
           this.token = data;
