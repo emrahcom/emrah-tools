@@ -1,58 +1,85 @@
 <template>
-  <div class="jitok">
-    <h1>{{ msg }}</h1>
-    secret: <input type="text" v-model="secret" /><br />
-    aud: <input type="text" v-model="aud" /><br />
-    alg:
-    <select v-model="alg">
-      <option>HS512</option>
-      <option>HS256</option>
-    </select>
-    <br />
-    iss: <input type="text" v-model="iss" /><br />
-    sub: <input type="text" v-model="sub" /><br />
-    room: <input type="text" v-model="room" /><br />
-    exp: <input type="text" v-model="exp" /><br />
-    username: <input type="text" v-model="cntx.user.name" /><br />
-    email: <input type="text" v-model="cntx.user.email" /><br />
-    avatar: <input type="text" v-model="cntx.user.avatar" /><br />
-    affiliation:<br />
-    <input type="radio" v-model="cntx.user.affi" value="owner" />
-    <label>owner</label><br />
-    <input type="radio" v-model="cntx.user.affi" value="member" />
-    <label>member</label><br />
-    <input type="radio" v-model="cntx.user.affi" value="" />
-    <label>don&apos;t set</label><br />
-    <br />
-    recording:<br />
-    <input type="radio" v-model="cntx.feat.rec" value="1" />
-    <label>enabled</label><br />
-    <input type="radio" v-model="cntx.feat.rec" value="0" />
-    <label>disabled</label><br />
-    <input type="radio" v-model="cntx.feat.rec" value="" />
-    <label>don&apos;t set</label><br />
-    <br />
-    streaming:<br />
-    <input type="radio" v-model="cntx.feat.live" value="1" />
-    <label>enabled</label><br />
-    <input type="radio" v-model="cntx.feat.live" value="0" />
-    <label>disabled</label><br />
-    <input type="radio" v-model="cntx.feat.live" value="" />
-    <label>don&apos;t set</label><br />
-    <br />
-    screen-sharing:<br />
-    <input type="radio" v-model="cntx.feat.screen" value="1" />
-    <label>enabled</label><br />
-    <input type="radio" v-model="cntx.feat.screen" value="0" />
-    <label>disabled</label><br />
-    <input type="radio" v-model="cntx.feat.screen" value="" />
-    <label>don&apos;t set</label><br />
-    <br />
-    <button v-on:click="getToken">token</button><br />
-    <span v-bind:class="isValidToken ? 'validToken' : 'invalidToken'">
-      {{ token }}
-    </span>
-    <br />
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-12 col-md-9 text-md-center">
+        <img alt="logo" src="../assets/logo.png" />
+        <h1>{{ msg }}</h1>
+        <br />
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-12 col-md-3 text-md-left">
+        <strong>alg</strong><br />
+        <select v-model="alg">
+          <option>HS512</option>
+          <option>HS256</option>
+        </select>
+        <br />
+        <strong>secret</strong><br />
+        <input type="text" v-model="secret" /><br />
+        <strong>aud</strong><br />
+        <input type="text" v-model="aud" /><br />
+        <strong>iss</strong><br />
+        <input type="text" v-model="iss" /><br />
+        <strong>sub</strong><br />
+        <input type="text" v-model="sub" /><br />
+        <strong>room</strong><br />
+        <input type="text" v-model="room" /><br />
+        <strong>exp</strong> <em>(seconds)</em><br />
+        <input type="text" v-model="exp" /><br />
+      </div>
+      <div class="col-12 col-md-3 text-md-left">
+        <strong>username</strong><br />
+        <input type="text" v-model="cntx.user.name" /><br />
+        <strong>email</strong><br />
+        <input type="text" v-model="cntx.user.email" /><br />
+        <strong>avatar</strong><br />
+        <input type="text" v-model="cntx.user.avatar" /><br />
+        <br />
+        <strong>affiliation</strong><br />
+        <input type="radio" v-model="cntx.user.affi" value="owner" /> &nbsp;
+        <label>owner</label><br />
+        <input type="radio" v-model="cntx.user.affi" value="member" /> &nbsp;
+        <label>member</label><br />
+        <input type="radio" v-model="cntx.user.affi" value="" /> &nbsp;
+        <label>don&apos;t set</label><br />
+      </div>
+      <div class="col-12 col-md-3 text-md-left">
+        <strong>recording</strong><br />
+        <input type="radio" v-model="cntx.feat.rec" value="1" /> &nbsp;
+        <label>enabled</label><br />
+        <input type="radio" v-model="cntx.feat.rec" value="0" /> &nbsp;
+        <label>disabled</label><br />
+        <input type="radio" v-model="cntx.feat.rec" value="" /> &nbsp;
+        <label>don&apos;t set</label><br />
+        <br />
+        <strong>streaming</strong><br />
+        <input type="radio" v-model="cntx.feat.live" value="1" /> &nbsp;
+        <label>enabled</label><br />
+        <input type="radio" v-model="cntx.feat.live" value="0" /> &nbsp;
+        <label>disabled</label><br />
+        <input type="radio" v-model="cntx.feat.live" value="" /> &nbsp;
+        <label>don&apos;t set</label><br />
+        <br />
+        <strong>screen-sharing</strong><br />
+        <input type="radio" v-model="cntx.feat.screen" value="1" /> &nbsp;
+        <label>enabled</label><br />
+        <input type="radio" v-model="cntx.feat.screen" value="0" /> &nbsp;
+        <label>disabled</label><br />
+        <input type="radio" v-model="cntx.feat.screen" value="" /> &nbsp;
+        <label>don&apos;t set</label><br />
+        <br />
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-12 col-md-9 text-md-center">
+        <button v-on:click="getToken">Update Token</button><br />
+        <br />
+        <span v-bind:class="[tokenClass]" class="token">
+          {{ token }}
+        </span>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -90,19 +117,22 @@ export default defineComponent({
           screen: ""
         }
       },
-      isValidToken: true,
+      tokenClass: "outdatedToken",
       token: ""
     };
   },
   methods: {
     async getToken() {
+      this.exp = Number(this.exp);
+
       const pl: Dict = {
         alg: this.alg,
         secret: this.secret,
         aud: this.aud,
         iss: this.iss,
         sub: this.sub,
-        room: this.room
+        room: this.room,
+        exp: this.exp
       };
 
       if (this.cntx.user.name) pl["name"] = this.cntx.user.name;
@@ -119,14 +149,15 @@ export default defineComponent({
         body: JSON.stringify(pl)
       });
 
+      this.tokenClass = "outdatedToken";
       await fetch(req)
         .then(async res => await res.text())
         .then(data => {
-          this.isValidToken = true;
+          this.tokenClass = "validToken";
           this.token = data;
         })
         .catch(() => {
-          this.isValidToken = false;
+          this.tokenClass = "invalidToken";
           this.token = "error";
         });
     }
@@ -137,7 +168,20 @@ export default defineComponent({
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
 h1 {
-  margin: 40px 0 0;
+  margin: 20px 0 0;
+}
+
+div {
+  border: 5px;
+}
+
+em {
+  font-size: 12px;
+}
+
+.token {
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }
 
 .validToken {
@@ -146,5 +190,9 @@ h1 {
 
 .invalidToken {
   color: red;
+}
+
+.outdatedToken {
+  color: gray;
 }
 </style>
