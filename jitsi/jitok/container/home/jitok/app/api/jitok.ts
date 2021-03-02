@@ -164,22 +164,22 @@ function createToken(inp: Dict): Token {
   if (inp.affi) user["affiliation"] = String(inp.affi);
   if (inp.avatar) user["avatar"] = String(inp.avatar);
   // payload.context.features
-  if (inp.rec) {
-    if (inp.rec === "1" || inp.rec === "true") {
+  if (inp.rec !== undefined) {
+    if (inp.rec === 1 || inp.rec === true) {
       feat["recording"] = true;
     } else {
       feat["recording"] = false;
     }
   }
-  if (inp.live) {
-    if (inp.live === "1" || inp.live === "true") {
+  if (inp.live !== undefined) {
+    if (inp.live === 1 || inp.live === true) {
       feat["livestreaming"] = true;
     } else {
       feat["livestreaming"] = false;
     }
   }
-  if (inp.screen) {
-    if (inp.screen === "1" || inp.screen === "true") {
+  if (inp.screen  !== undefined) {
+    if (inp.screen === 1 || inp.screen === true) {
       feat["screen-sharing"] = true;
     } else {
       feat["screen-sharing"] = false;

@@ -142,9 +142,9 @@ export default defineComponent({
       if (this.cntx.user.avatar) pl["avatar"] = this.cntx.user.avatar;
       if (this.cntx.user.affi) pl["affi"] = this.cntx.user.affi;
 
-      if (this.cntx.feat.rec) pl["rec"] = this.cntx.feat.rec;
-      if (this.cntx.feat.live) pl["live"] = this.cntx.feat.live;
-      if (this.cntx.feat.screen) pl["screen"] = this.cntx.feat.screen;
+      if (this.cntx.feat.rec) pl["rec"] = Number(this.cntx.feat.rec);
+      if (this.cntx.feat.live) pl["live"] = Number(this.cntx.feat.live);
+      if (this.cntx.feat.screen) pl["screen"] = Number(this.cntx.feat.screen);
 
       const req = new Request("https://jitok.emrah.com/api", {
         method: "POST",
