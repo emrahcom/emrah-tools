@@ -120,7 +120,7 @@ export default defineComponent({
         }
       },
       tokenClass: "outdatedToken",
-      token: ""
+      token: "no token yet"
     };
   },
   methods: {
