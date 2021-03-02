@@ -33,7 +33,7 @@
         <input type="text" v-model="cntx.user.name" /><br />
         <strong>email</strong><br />
         <input type="text" v-model="cntx.user.email" /><br />
-        <strong>avatar</strong><br />
+        <strong>avatar link</strong><br />
         <input type="text" v-model="cntx.user.avatar" /><br />
         <br />
         <strong>affiliation</strong><br />
@@ -75,9 +75,11 @@
       <div class="col-12 col-md-9 text-md-center">
         <button v-on:click="getToken">Update Token</button><br />
         <br />
-        <span v-bind:class="[tokenClass]" class="token">
-          {{ token }}
-        </span>
+        <div class="tokenDiv">
+          <span v-bind:class="[tokenClass]" class="token">
+            {{ token }}
+          </span>
+        </div>
       </div>
     </div>
   </div>
@@ -123,7 +125,7 @@ export default defineComponent({
   },
   methods: {
     async getToken() {
-      this.exp = Number(this.exp);
+      this.exp = Number(this.exp) || 3600;
 
       const pl: Dict = {
         alg: this.alg,
@@ -177,6 +179,10 @@ div {
 
 em {
   font-size: 12px;
+}
+
+.tokenDiv {
+  background: #f8f8f8;
 }
 
 .token {
