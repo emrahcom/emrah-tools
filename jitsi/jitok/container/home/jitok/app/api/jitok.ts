@@ -43,7 +43,7 @@ class BadRequest extends Error {
 // ----------------------------------------------------------------------------
 const ok = (req: ServerRequest, resBody: string) =>
   req.respond({
-    status: 200,
+    status: Status.OK,
     body: resBody,
   });
 
