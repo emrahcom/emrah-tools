@@ -1,5 +1,4 @@
-Vue.js
-======
+# Vue.js
 
 ## purge old nodejs
 
@@ -25,6 +24,7 @@ npm --version
 ```
 
 ## npm update
+
 DON'T upgrade or install!
 
 ```bash
