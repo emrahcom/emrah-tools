@@ -64,3 +64,9 @@ apt-get update --allow-releaseinfo-change
 apt-get install git
 apt-get install docker-ce --no-install-recommends
 ```
+
+#### docker test
+
+```bash
+docker run hello-world
+```
