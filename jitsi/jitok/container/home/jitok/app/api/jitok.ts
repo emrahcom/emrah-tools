@@ -178,7 +178,7 @@ function createToken(inp: Dict): Token {
       feat["livestreaming"] = false;
     }
   }
-  if (inp.screen  !== undefined) {
+  if (inp.screen !== undefined) {
     if (inp.screen === 1 || inp.screen === true) {
       feat["screen-sharing"] = true;
     } else {

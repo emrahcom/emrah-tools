@@ -1,5 +1,4 @@
-README
-======
+# README
 
 Edit `teacher.php` according to your teacher info and run the following command
 to print the teacher token:
