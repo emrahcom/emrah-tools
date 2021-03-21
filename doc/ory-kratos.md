@@ -12,7 +12,7 @@ lxc-copy -n template-buster -N test-ory-kratos
 
 #### config
 
-Customize the config to aalow `Docker` in `LXC`.
+Customize the config to allow `Docker` in `LXC`.
 
 ```conf
 # Distribution configuration
@@ -47,13 +47,13 @@ lxc.cgroup.devices.allow = c 10:200 rwm
 
 ## kratos
 
-#### packages
+#### base packages
 
 ```bash
 apt-get update && apt-get autoremove && apt-get dist-upgrade -dy && \
     apt-get dist-upgrade && apt-get autoremove --purge
 
-apt-get install gnupg apt-transport-https ca-certificates wget
+apt-get install gnupg apt-transport-https ca-certificates curl wget
 
 echo "deb https://download.docker.com/linux/debian buster stable" > \
     /etc/apt/sources.list.d/docker.list
@@ -65,8 +65,35 @@ apt-get install git
 apt-get install docker-ce --no-install-recommends
 ```
 
+#### docker compose
+
+```bash
+LINK=$(curl -s https://api.github.com/repos/docker/compose/releases/latest | \
+    grep browser_download_url | grep -o 'https.*docker-compose-Linux-x86_64' \
+    | uniq)
+wget -O /tmp/docker-compose $LINK
+chmod +x /tmp/docker-compose
+mv /tmp/docker-compose /usr/local/bin/
+```
+
 #### docker test
 
 ```bash
+docker --version
+docker-compose --version
 docker run hello-world
+```
+
+#### clone
+
+```bash
+cd
+git clone https://github.com/ory/kratos.git
+```
+
+#### checkout to tag
+
+```bash
+cd kratos
+git checkout v0.5.5-alpha.1
 ```
