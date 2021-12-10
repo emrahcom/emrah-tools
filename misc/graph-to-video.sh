@@ -2,27 +2,27 @@
 set -e
 
 # ------------------------------------------------------------------------------
-# packages:
+# required packages:
 #   apt-get install imagemagick bc
 #
 # notes:
-#   - graph is a chart modified by gimp
-#   - graph should have the same resolution with the source video
-#   - graph should be transparent
-#   - inverted color may be better
+#   - graph is a chart prepared by LibreOffice Calc using data
+#   - graph is captured by scrot while zooming (ctrl+shift+j) in Calc
+#   - graph is a chart modified by GIMP
+#     - it should have the same resolution with the source video (ex. 1920x1080)
+#     - graph should be transparent
+#     - inverted color may be better
 #
-#   - get NUMERATED_PIXELS from the graph. This is the active X axis length as
-#     pixels.
-#   - get SECONDS from the graph. This is the active X axis length as seconds.
-#   - get XBASE from the graph. This is the pixel coordinate for X0.
-#   - get Y0 from the graph. This is the pixel coordinate for box's top.
-#   - get Y1 from the graph. This is the pixel coordinate for box's bottom.
+#   - X0 is the pixel coordinate for starting point on X axis
+#   - X1 is the pixel coordinate for ending point on X axis
+#   - Y0 is the pixel coordinate for top point of the slider on Y axis
+#   - Y1 is the pixel coordinate for bottom point of the slider on Y axis
+#   - SECONDS is the X axis length of the active part [X0, X1] as seconds
+#   - FRAMERATE is the number of frames per second (default 0.5)
 #
 # video:
-#   DIVIDER=2 (-r 1/$DIVIDER)
-#
-#   ffmpeg -r 1/$DIVIDER -i frames/%06d.png -vcodec h264 -y timer.mp4
-#   ffmpeg -i source.mp4 -r 1/$DIVIDER -i frames/%06d.png \
+#   ffmpeg -r $FRAMERATE -i frames/%06d.png -vcodec h264 -y timer.mp4
+#   ffmpeg -i source.mp4 -r $FRAMERATE -i frames/%06d.png \
 #       -filter_complex "overlay=0:0" -y graph-0.mp4
 #   ffmpeg -i graph-0.mp4 -c copy -movflags faststart -y graph-1.mp4
 # ------------------------------------------------------------------------------
@@ -30,23 +30,24 @@ mkdir -p frames
 rm -f frames/*.png
 
 GRAPH="graph.png"
-SECONDS=7320
-NUMERATED_PIXELS=1452
-XBASE=398
+X0=398
+X1=1850
 Y0=30
 Y1=994
+SECONDS=7320
+FRAMERATE=0.5
+NUMERATED_PIXELS=$(bc <<< "$X1 - $X0")
 PPS=$(bc <<< "scale=6; $NUMERATED_PIXELS/$SECONDS")
 BGCOLOR="rgba(0, 0, 0, 0%)"
 BOXCOLOR="rgb(255, 0, 0)"
 BOXWIDTH=2
 
-DIVIDER=2
-SEQ_END=$(bc <<< "scale=0; $SECONDS/$DIVIDER")
+SEQ_END=$(bc <<< "scale=0; $SECONDS*$FRAMERATE")
 for i in $(seq -f "%06g" 0 $SEQ_END); do
-    X0=$(bc <<< "scale=4; $XBASE + $PPS*$i*$DIVIDER")
-    X1=$(bc <<< "scale=4; $X0 + $BOXWIDTH")
-    echo $i: $X0 - $X1
+    x0=$(bc <<< "scale=4; $X0 + $PPS*$i/$FRAMERATE")
+    x1=$(bc <<< "scale=4; $x0 + $BOXWIDTH")
+    echo $i: $x0 - $x1
 
-    convert $GRAPH -fill "$BOXCOLOR" -draw "rectangle $X0,$Y0 $X1,$Y1" \
+    convert $GRAPH -fill "$BOXCOLOR" -draw "rectangle $x0,$Y0 $x1,$Y1" \
         frames/$i.png
 done
