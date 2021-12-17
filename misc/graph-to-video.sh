@@ -7,9 +7,12 @@ set -e
 #
 # notes:
 #   - graph is a chart prepared by LibreOffice Calc using data
+#     - remove the advertisement periods. keep the initial 2 mins.
+#     - copy the last minute data to the initial minute of advertisement
 #   - graph is captured by scrot while zooming (ctrl+shift+j) in Calc
 #   - graph is a chart modified by GIMP
 #     - it should have the same resolution with the source video (ex. 1920x1080)
+#     - glue the advertisement edges. remove the second minute of advertisement
 #     - graph should be transparent
 #     - inverted color may be better
 #
