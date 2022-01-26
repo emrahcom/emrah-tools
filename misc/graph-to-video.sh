@@ -24,6 +24,7 @@ set -e
 #   - FRAMERATE is the number of frames per second (default 0.5)
 #
 # video:
+#   FRAMERATE=0.5
 #   ffmpeg -r $FRAMERATE -i frames/%06d.png -vcodec h264 -y timer.mp4
 #   ffmpeg -i source.mp4 -r $FRAMERATE -i frames/%06d.png \
 #       -filter_complex "overlay=0:0" -y graph-0.mp4
