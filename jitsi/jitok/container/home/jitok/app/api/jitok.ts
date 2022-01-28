@@ -2,6 +2,7 @@
 // jitok.ts
 // ----------------------------------------------------------------------------
 import { Status } from "https://deno.land/std/http/http_status.ts";
+import { decode } from "https://deno.land/std/encoding/base64.ts";
 import { Algorithm } from "https://deno.land/x/djwt/algorithm.ts";
 import {
   create,
@@ -16,8 +17,8 @@ const PORT = 9000;
 // ----------------------------------------------------------------------------
 interface Token {
   header: Header;
-  secret: string;
   payload: Payload;
+  cryptoKey: CryptoKey;
 }
 
 // ----------------------------------------------------------------------------
@@ -113,11 +114,28 @@ function validateInput(ps: Dict): Dict {
 }
 
 // ----------------------------------------------------------------------------
-function createToken(inp: Dict): Token {
+async function getCryptoKey(secret: string): Promise<CryptoKey> {
+  const binaryDer = decode(secret).buffer;
+  const cryptoKey = await crypto.subtle.importKey(
+    "raw",
+    binaryDer,
+    {
+      name: "HMAC",
+      hash: "SHA-512",
+    },
+    true,
+    ["sign", "verify"],
+  );
+
+  return cryptoKey;
+}
+
+// ----------------------------------------------------------------------------
+async function createToken(inp: Dict): Promise<Token> {
   let alg: Algorithm = "HS512";
   if (inp.alg && inp.alg === "HS256") alg = "HS256";
 
-  let secret = "";
+  const cryptoKey = await getCryptoKey(String(inp.secret));
   const user: Dict = {};
   const feat: Dict = {};
   const cntx: Dict = {};
@@ -130,8 +148,6 @@ function createToken(inp: Dict): Token {
     exp: getNumericDate(3600),
   };
 
-  // secret
-  if (inp.secret) secret = String(inp.secret);
   // payload
   if (inp.aud) pl.aud = String(inp.aud);
   (inp.iss) ? pl.iss = String(inp.iss) : pl.iss = String(inp.aud);
@@ -172,14 +188,14 @@ function createToken(inp: Dict): Token {
 
   return {
     header: { alg: alg, typ: "JWT" },
-    secret: secret,
+    cryptoKey: cryptoKey,
     payload: pl,
   };
 }
 
 // ----------------------------------------------------------------------------
 async function createJWT(tk: Token): Promise<string> {
-  const jwt = await create(tk.header, tk.payload, tk.secret);
+  const jwt = await create(tk.header, tk.payload, tk.cryptoKey);
 
   return jwt;
 }
@@ -189,7 +205,7 @@ async function triggerJWT(req: Deno.RequestEvent) {
   try {
     const ps = await req.request.json();
     const inp = validateInput(ps);
-    const tk = createToken(inp);
+    const tk = await createToken(inp);
     await createJWT(tk).then((jwt) => ok(req, jwt));
   } catch (e) {
     if (e.name === "BadRequest") badRequest(req);
