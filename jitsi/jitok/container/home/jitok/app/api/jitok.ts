@@ -1,11 +1,7 @@
 // ----------------------------------------------------------------------------
 // jitok.ts
 // ----------------------------------------------------------------------------
-import {
-  serve,
-  Server,
-  ServerRequest,
-} from "https://deno.land/std/http/server.ts";
+import { Status } from "https://deno.land/std/http/http_status.ts";
 import { Algorithm } from "https://deno.land/x/djwt/algorithm.ts";
 import {
   create,
@@ -13,12 +9,9 @@ import {
   Header,
   Payload,
 } from "https://deno.land/x/djwt/mod.ts";
-import { Status } from "https://deno.land/std/http/http_status.ts";
 
-const app: Server = serve({
-  hostname: "0.0.0.0",
-  port: 9000,
-});
+const HOSTNAME = "0.0.0.0";
+const PORT = 9000;
 
 // ----------------------------------------------------------------------------
 interface Token {
@@ -41,52 +34,39 @@ class BadRequest extends Error {
 }
 
 // ----------------------------------------------------------------------------
-const ok = (req: ServerRequest, resBody: string) =>
-  req.respond({
-    status: Status.OK,
-    body: resBody,
-  });
-
-// ----------------------------------------------------------------------------
-const badRequest = (req: ServerRequest) =>
-  req.respond({
-    status: Status.BadRequest,
-    body: "BadRequest",
-  });
-
-// ----------------------------------------------------------------------------
-const forbidden = (req: ServerRequest) =>
-  req.respond({
-    status: Status.Forbidden,
-    body: "Forbidden",
-  });
-
-// ----------------------------------------------------------------------------
-const internalServerError = (req: ServerRequest) =>
-  req.respond({
-    status: Status.InternalServerError,
-    body: "InternalServerError",
-  });
-
-// ----------------------------------------------------------------------------
-const notImplemented = (req: ServerRequest) =>
-  req.respond({
-    status: Status.NotImplemented,
-    body: "NotImplemented",
-  });
-
-// ----------------------------------------------------------------------------
-function parseQueryString(req: ServerRequest): URLSearchParams {
-  const qs = req.url.match("[?].*$");
-  if (!qs) throw new BadRequest("no query string");
-
-  return new URLSearchParams(qs[0]);
+async function ok(req: Deno.RequestEvent, body: string) {
+  await req.respondWith(
+    new Response(body, {
+      status: Status.OK,
+    }),
+  ).catch();
 }
 
 // ----------------------------------------------------------------------------
-async function parseRequestBody<T>(req: ServerRequest): Promise<T> {
-  const str = new TextDecoder("utf-8").decode(await Deno.readAll(req.body));
-  return JSON.parse(str);
+async function badRequest(req: Deno.RequestEvent) {
+  await req.respondWith(
+    new Response("BadRequest", {
+      status: Status.BadRequest,
+    }),
+  ).catch();
+}
+
+// ----------------------------------------------------------------------------
+async function forbidden(req: Deno.RequestEvent) {
+  await req.respondWith(
+    new Response("Forbidden", {
+      status: Status.Forbidden,
+    }),
+  ).catch();
+}
+
+// ----------------------------------------------------------------------------
+async function notImplemented(req: Deno.RequestEvent) {
+  await req.respondWith(
+    new Response("NotImplemented", {
+      status: Status.NotImplemented,
+    }),
+  ).catch();
 }
 
 // ----------------------------------------------------------------------------
@@ -201,46 +181,42 @@ function createToken(inp: Dict): Token {
 async function createJWT(tk: Token): Promise<string> {
   const jwt = await create(tk.header, tk.payload, tk.secret);
 
-  console.log(tk);
   return jwt;
 }
 
 // ----------------------------------------------------------------------------
-async function triggerJWT(req: ServerRequest) {
+async function triggerJWT(req: Deno.RequestEvent) {
   try {
-    const ps = await parseRequestBody<Dict>(req);
+    const ps = await req.request.json();
     const inp = validateInput(ps);
     const tk = createToken(inp);
     await createJWT(tk).then((jwt) => ok(req, jwt));
   } catch (e) {
-    try {
-      console.log(e);
-      if (e.name === "BadRequest") badRequest(req);
-      else notImplemented(req);
-    } catch (e) {
-      try {
-        req.conn.close();
-      } catch {
-        undefined;
-      }
-    }
+    if (e.name === "BadRequest") badRequest(req);
+    else notImplemented(req);
   }
 }
 
 // ----------------------------------------------------------------------------
-function triggerReject(req: ServerRequest) {
-  forbidden(req)
-    .catch((e) => {
-      req.conn.close();
-    })
-    .catch(() => {});
+async function handle(cnn: Deno.Conn) {
+  const http = Deno.serveHttp(cnn);
+
+  for await (const req of http) {
+    if ((req.request.method === "POST") && (req.request.url.match("^/api"))) {
+      triggerJWT(req);
+    } else forbidden(req);
+  }
 }
 
 // ----------------------------------------------------------------------------
 async function main() {
-  for await (const req of app) {
-    if ((req.method === "POST") && (req.url.match("^/api"))) triggerJWT(req);
-    else triggerReject(req);
+  const server = Deno.listen({
+    hostname: HOSTNAME,
+    port: PORT,
+  });
+
+  for await (const cnn of server) {
+    handle(cnn);
   }
 }
 
