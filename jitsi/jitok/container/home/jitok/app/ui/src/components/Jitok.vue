@@ -146,13 +146,8 @@ export default defineComponent({
       if (this.cntx.feat.live) pl["live"] = Number(this.cntx.feat.live);
       if (this.cntx.feat.screen) pl["screen"] = Number(this.cntx.feat.screen);
 
-      //const req = new Request("https://jitok.emrah.com/api", {
-      const req = new Request("http://127.0.0.1:9000/api", {
-        mode: "cors",
+      const req = new Request("https://jitok.emrah.com/api", {
         method: "POST",
-        headers: {
-          "Access-Control-Allow-Origin": "http://127.0.0.1:8080",
-        },
         body: JSON.stringify(pl)
       });
 
