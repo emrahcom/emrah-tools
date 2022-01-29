@@ -3,7 +3,6 @@
 // ----------------------------------------------------------------------------
 import { serve } from "https://deno.land/std/http/server.ts";
 import { Status } from "https://deno.land/std/http/http_status.ts";
-import { decode } from "https://deno.land/std/encoding/base64.ts";
 import { Algorithm } from "https://deno.land/x/djwt/algorithm.ts";
 import {
   create,
@@ -107,14 +106,15 @@ function validateInput(ps: Dict): Dict {
 }
 
 // ----------------------------------------------------------------------------
-async function getCryptoKey(secret: string): Promise<CryptoKey> {
-  const binaryDer = decode(secret).buffer;
+async function getCryptoKey(secret: string, hash: string): Promise<CryptoKey> {
+  const encoder = new TextEncoder();
+  const keyData = encoder.encode(secret);
   const cryptoKey = await crypto.subtle.importKey(
     "raw",
-    binaryDer,
+    keyData,
     {
       name: "HMAC",
-      hash: "SHA-512",
+      hash: hash,
     },
     true,
     ["sign", "verify"],
@@ -126,9 +126,14 @@ async function getCryptoKey(secret: string): Promise<CryptoKey> {
 // ----------------------------------------------------------------------------
 async function createToken(inp: Dict): Promise<Token> {
   let alg: Algorithm = "HS512";
-  if (inp.alg && inp.alg === "HS256") alg = "HS256";
+  let hash = "SHA-512";
 
-  const cryptoKey = await getCryptoKey(String(inp.secret));
+  if (inp.alg && inp.alg === "HS256") {
+    alg = "HS256";
+    hash = "SHA-256";
+  }
+
+  const cryptoKey = await getCryptoKey(String(inp.secret), hash);
   const user: Dict = {};
   const feat: Dict = {};
   const cntx: Dict = {};
