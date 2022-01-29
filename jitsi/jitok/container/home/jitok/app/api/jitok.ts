@@ -1,6 +1,7 @@
 // ----------------------------------------------------------------------------
 // jitok.ts
 // ----------------------------------------------------------------------------
+import { serve } from "https://deno.land/std/http/server.ts";
 import { Status } from "https://deno.land/std/http/http_status.ts";
 import { decode } from "https://deno.land/std/encoding/base64.ts";
 import { Algorithm } from "https://deno.land/x/djwt/algorithm.ts";
@@ -35,39 +36,31 @@ class BadRequest extends Error {
 }
 
 // ----------------------------------------------------------------------------
-async function ok(req: Deno.RequestEvent, body: string) {
-  await req.respondWith(
-    new Response(body, {
-      status: Status.OK,
-    }),
-  ).catch();
+function ok(body: string): Response {
+  return new Response(body, {
+    status: Status.OK,
+  });
 }
 
 // ----------------------------------------------------------------------------
-async function badRequest(req: Deno.RequestEvent) {
-  await req.respondWith(
-    new Response("BadRequest", {
-      status: Status.BadRequest,
-    }),
-  ).catch();
+function badRequest(): Response {
+  return new Response("BadRequest", {
+    status: Status.BadRequest,
+  });
 }
 
 // ----------------------------------------------------------------------------
-async function forbidden(req: Deno.RequestEvent) {
-  await req.respondWith(
-    new Response("Forbidden", {
-      status: Status.Forbidden,
-    }),
-  ).catch();
+function forbidden(): Response {
+  return new Response("Forbidden", {
+    status: Status.Forbidden,
+  });
 }
 
 // ----------------------------------------------------------------------------
-async function notImplemented(req: Deno.RequestEvent) {
-  await req.respondWith(
-    new Response("NotImplemented", {
-      status: Status.NotImplemented,
-    }),
-  ).catch();
+function notImplemented(): Response {
+  return new Response("NotImplemented", {
+    status: Status.NotImplemented,
+  });
 }
 
 // ----------------------------------------------------------------------------
@@ -201,39 +194,34 @@ async function createJWT(tk: Token): Promise<string> {
 }
 
 // ----------------------------------------------------------------------------
-async function triggerJWT(req: Deno.RequestEvent) {
+async function triggerJWT(req: Request): Promise<Response> {
   try {
-    const ps = await req.request.json();
+    const ps = await req.json();
     const inp = validateInput(ps);
     const tk = await createToken(inp);
-    await createJWT(tk).then((jwt) => ok(req, jwt));
+    return await createJWT(tk).then((jwt) => ok(jwt));
   } catch (e) {
-    if (e.name === "BadRequest") badRequest(req);
-    else notImplemented(req);
+    if (e.name === "BadRequest") return badRequest();
+    else return notImplemented();
   }
 }
 
 // ----------------------------------------------------------------------------
-async function handle(cnn: Deno.Conn) {
-  const http = Deno.serveHttp(cnn);
+async function handler(req: Request): Promise<Response> {
+  const url = new URL(req.url);
+  const path = url.pathname;
 
-  for await (const req of http) {
-    if ((req.request.method === "POST") && (req.request.url.match("^/api"))) {
-      triggerJWT(req);
-    } else forbidden(req);
-  }
+  if ((req.method === "POST") && (path.match("^/api"))) {
+    return await triggerJWT(req);
+  } else return forbidden();
 }
 
 // ----------------------------------------------------------------------------
-async function main() {
-  const server = Deno.listen({
+function main() {
+  serve(handler, {
     hostname: HOSTNAME,
     port: PORT,
   });
-
-  for await (const cnn of server) {
-    handle(cnn);
-  }
 }
 
 // ----------------------------------------------------------------------------
