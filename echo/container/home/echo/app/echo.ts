@@ -1,6 +1,7 @@
 // ----------------------------------------------------------------------------
 // echo.ts
 // ----------------------------------------------------------------------------
+import { serve } from "https://deno.land/std/http/server.ts";
 import { Status } from "https://deno.land/std/http/http_status.ts";
 
 const HOSTNAME = "0.0.0.0";
@@ -31,48 +32,38 @@ interface Echo {
 }
 
 // ----------------------------------------------------------------------------
-async function ok(req: Deno.RequestEvent, body: string) {
-  await req.respondWith(
-    new Response(body, {
-      status: Status.OK,
-    }),
-  ).catch();
+function ok(body: string): Response {
+  return new Response(body, {
+    status: Status.OK,
+  });
 }
 
 // ----------------------------------------------------------------------------
-async function badRequest(req: Deno.RequestEvent) {
-  await req.respondWith(
-    new Response("BadRequest", {
-      status: Status.BadRequest,
-    }),
-  ).catch();
+function badRequest(): Response {
+  return new Response("BadRequest", {
+    status: Status.BadRequest,
+  });
 }
 
 // ----------------------------------------------------------------------------
-async function forbidden(req: Deno.RequestEvent) {
-  await req.respondWith(
-    new Response("Forbidden", {
-      status: Status.Forbidden,
-    }),
-  ).catch();
+function forbidden(): Response {
+  return new Response("Forbidden", {
+    status: Status.Forbidden,
+  });
 }
 
 // ----------------------------------------------------------------------------
-async function internalServerError(req: Deno.RequestEvent) {
-  await req.respondWith(
-    new Response("InternalServerError", {
-      status: Status.InternalServerError,
-    }),
-  ).catch();
+function internalServerError(): Response {
+  return new Response("InternalServerError", {
+    status: Status.InternalServerError,
+  });
 }
 
 // ----------------------------------------------------------------------------
-async function notImplemented(req: Deno.RequestEvent) {
-  await req.respondWith(
-    new Response("NotImplemented", {
-      status: Status.NotImplemented,
-    }),
-  ).catch();
+function notImplemented(): Response {
+  return new Response("NotImplemented", {
+    status: Status.NotImplemented,
+  });
 }
 
 // ----------------------------------------------------------------------------
@@ -84,14 +75,11 @@ function parseQueryString(url: string): URLSearchParams {
 }
 
 // ----------------------------------------------------------------------------
-function validateInput(
-  req: Deno.RequestEvent,
-  qs: URLSearchParams,
-): Echo {
-  if (!req.request.headers.has("X-Forwarded-For")) {
+function validateInput(req: Request, qs: URLSearchParams): Echo {
+  if (!req.headers.has("X-Forwarded-For")) {
     throw new BadRequest("remote_ip not found");
   }
-  const addr = req.request.headers.get("X-Forwarded-For");
+  const addr = req.headers.get("X-Forwarded-For");
   if (!addr || !addr.match("^[0-9.]+$")) throw new BadRequest("invalid addr");
 
   if (!qs.has("proto")) throw new BadRequest("proto not found");
@@ -150,38 +138,30 @@ async function echo(inp: Echo) {
 }
 
 // ----------------------------------------------------------------------------
-async function triggerEcho(req: Deno.RequestEvent) {
+async function triggerEcho(req: Request): Promise<Response> {
   try {
-    const qs = parseQueryString(req.request.url);
+    const qs = parseQueryString(req.url);
     const inp = validateInput(req, qs);
-    await echo(inp).then(() => ok(req, "ok"));
+    return await echo(inp).then(() => ok("ok"));
   } catch (e) {
-    if (e.name === "BadRequest") badRequest(req);
-    else if (e.name === "SubProcess") internalServerError(req);
-    else notImplemented(req);
+    if (e.name === "BadRequest") return badRequest();
+    else if (e.name === "SubProcess") return internalServerError();
+    else return notImplemented();
   }
 }
 
 // ----------------------------------------------------------------------------
-async function handle(cnn: Deno.Conn) {
-  const http = Deno.serveHttp(cnn);
-
-  for await (const req of http) {
-    if (req.request.method === "GET") triggerEcho(req);
-    else forbidden(req);
-  }
+async function handler(req: Request): Promise<Response> {
+  if (req.method === "GET") return await triggerEcho(req);
+  else return forbidden();
 }
 
 // ----------------------------------------------------------------------------
-async function main() {
-  const server = Deno.listen({
+function main() {
+  serve(handler, {
     hostname: HOSTNAME,
     port: PORT,
   });
-
-  for await (const cnn of server) {
-    handle(cnn);
-  }
 }
 
 // ----------------------------------------------------------------------------
