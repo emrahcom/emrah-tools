@@ -100,8 +100,8 @@ export default defineComponent({
   data() {
     return {
       alg: "HS512",
-      secret: "mysecret",
-      aud: "myapp",
+      secret: "myappsecret",
+      aud: "myappid",
       iss: "",
       sub: "*",
       room: "*",
