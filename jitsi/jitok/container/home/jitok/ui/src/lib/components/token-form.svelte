@@ -25,13 +25,9 @@
       <FieldAud bind:aud={payload.aud} />
     </div>
 
-    <div class="col-lg" style="max-width:540px;">
-      User
-    </div>
+    <div class="col-lg" style="max-width:540px;">User</div>
 
-    <div class="col-lg" style="max-width:540px;">
-      Features
-    </div>
+    <div class="col-lg" style="max-width:540px;">Features</div>
   </div>
 </div>
 

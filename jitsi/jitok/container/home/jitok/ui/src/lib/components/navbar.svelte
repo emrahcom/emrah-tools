@@ -1,14 +1,9 @@
-<script lang="ts">
-  import Brand from "$lib/components/brand.svelte";
-</script>
-
-<!-- -------------------------------------------------------------------------->
 <nav class="navbar navbar-expand navbar-light bg-light fixed-top shadow">
-  <div class="container-fluid">
-    <Brand />
-
-    <div class="col justify-content-center text-center">
-      <h4 class="text-muted">Welcome to Jitok</h4>
+  <div class="container-fluid my-2">
+    <div class="row m-auto">
+      <div class="col">
+        <h4 class="text-muted my-auto">Welcome to Jitok</h4>
+      </div>
     </div>
   </div>
 </nav>
