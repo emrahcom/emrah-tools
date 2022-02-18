@@ -1,9 +1,20 @@
 <script lang="ts">
   import type { Payload } from "$lib/custom-types";
-  import FieldAlg from "$lib/components/field-alg.svelte";
   import FieldSecret from "$lib/components/field-secret.svelte";
   import FieldText from "$lib/components/field-text.svelte";
   import FieldNumber from "$lib/components/field-number.svelte";
+  import FieldSelect from "$lib/components/field-select.svelte";
+
+  const algOptions = [
+    {
+      optName: "HS512",
+      optValue: "HS512",
+    },
+    {
+      optName: "HS256",
+      optValue: "HS256",
+    },
+  ];
 
   let payload: Payload = {
     alg: "HS512",
@@ -35,7 +46,7 @@
     <div class="col-lg text-center" style="max-width:540px;">
       <h5 class="text-muted mt-3">System</h5>
 
-      <FieldAlg bind:alg={payload.alg} />
+      <FieldSelect name="alg" bind:value={payload.alg} options={algOptions} />
       <FieldSecret bind:secret={payload.secret} />
       <FieldText name="aud" required={true} bind:value={payload.aud} />
       <FieldText name="iss" required={false} bind:value={payload.iss} />
