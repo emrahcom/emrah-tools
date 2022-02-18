@@ -32,14 +32,24 @@ deno --version
 
 ```bash
 adduser jitok --disabled-password --gecos ""
+```
 
-cp -arp container/home/jitok/app /home/jitok/
-chmod 755 /home/jitok/app/api/jitok.sh
+##### API
+
+```bash
+cp -arp container/home/jitok/api /home/jitok/
+chmod 755 /home/jitok/api/jitok.sh
 
 cp container/etc/systemd/system/jitok.service /etc/systemd/system/
 systemctl daemon-reload
 systemctl enable jitok.service
 systemctl restart jitok.service
+```
+
+##### UI
+
+```bash
+cp -arp container/home/jitok/ui /home/jitok/
 ```
 
 #### Nginx

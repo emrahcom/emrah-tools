@@ -5,7 +5,7 @@ After=network-online.target
 [Service]
 User=jitok
 Group=jitok
-ExecStart=/home/jitok/app/api/jitok.sh
+ExecStart=/home/jitok/api/jitok.sh
 KillMode=control-group
 Restart=always
 RestartSec=10
