@@ -4,6 +4,7 @@
   import FieldPassword from "$lib/components/field-password.svelte";
   import FieldNumber from "$lib/components/field-number.svelte";
   import FieldSelect from "$lib/components/field-select.svelte";
+  import FieldRadio from "$lib/components/field-radio.svelte";
 
   const algOptions = [
     {
@@ -13,6 +14,21 @@
     {
       optName: "HS256",
       optValue: "HS256",
+    },
+  ];
+
+  const affiOptions = [
+    {
+      optName: "owner",
+      optValue: "owner",
+    },
+    {
+      optName: "member",
+      optValue: "member",
+    },
+    {
+      optName: "dont set",
+      optValue: "",
     },
   ];
 
@@ -73,6 +89,12 @@
         required={false}
         bind:value={payload.cntx.user.avatar}
       />
+      <FieldRadio
+        title="affiliation"
+        name="affi"
+        bind:value={payload.cntx.user.affi}
+        options={affiOptions}
+      />
     </div>
 
     <div class="col-lg text-center" style="max-width:540px;">
@@ -90,8 +112,4 @@
 <br />
 <p>Alg: {payload.alg}</p>
 <p>Secret: {payload.secret}</p>
-<p>Aud: {payload.aud}</p>
-<p>Iss: {payload.iss}</p>
-<p>Sub: {payload.sub}</p>
-<p>Room: {payload.room}</p>
-<p>Exp: {payload.exp}</p>
+<p>Affi: {payload.cntx.user.affi}</p>
