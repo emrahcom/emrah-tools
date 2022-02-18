@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Payload } from "$lib/custom-types";
-  import FieldSecret from "$lib/components/field-secret.svelte";
   import FieldText from "$lib/components/field-text.svelte";
+  import FieldPassword from "$lib/components/field-password.svelte";
   import FieldNumber from "$lib/components/field-number.svelte";
   import FieldSelect from "$lib/components/field-select.svelte";
 
@@ -47,7 +47,7 @@
       <h5 class="text-muted mt-3">System</h5>
 
       <FieldSelect name="alg" bind:value={payload.alg} options={algOptions} />
-      <FieldSecret bind:secret={payload.secret} />
+      <FieldPassword bind:secret={payload.secret} />
       <FieldText name="aud" required={true} bind:value={payload.aud} />
       <FieldText name="iss" required={false} bind:value={payload.iss} />
       <FieldText name="sub" required={false} bind:value={payload.sub} />
