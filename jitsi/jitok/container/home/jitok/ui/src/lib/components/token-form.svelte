@@ -1,13 +1,8 @@
 <script lang="ts">
+  import type { Payload } from "$lib/custom-types";
   import FieldAlg from "$lib/components/field-alg.svelte";
   import FieldSecret from "$lib/components/field-secret.svelte";
   import FieldAud from "$lib/components/field-aud.svelte";
-
-  interface Payload {
-    alg: "HS256" | "HS512";
-    secret: string;
-    aud: string;
-  }
 
   let payload: Payload = {
     alg: "HS512",
