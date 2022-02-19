@@ -1,7 +1,8 @@
+import { API_URL } from "$lib/config";
 import type { Payload } from "$lib/custom-types";
 
 export async function getToken(p: Payload) {
-  const req = new Request("https://jitok.emrah.com/api", {
+  const req = new Request(API_URL, {
     method: "POST",
     body: JSON.stringify(p),
   });
