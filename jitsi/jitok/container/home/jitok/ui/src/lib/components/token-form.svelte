@@ -38,8 +38,10 @@
     },
   };
 
-  function setToken() {
-    const _token = getToken(payload);
+  async function setToken() {
+    payload.exp = Number(payload.exp) || 3600;
+
+    const _token = await getToken(payload);
     token = _token;
   }
 </script>
@@ -117,7 +119,12 @@
     </div>
   </form>
 
-  <section id="token" class="row mt-3">
-    <span class="text-muted text-center">{token}</span>
-  </section>
+  <div class="row justify-content-center">
+    <div
+      class="col text-center text-muted text-break mx-3 mt-3"
+      style="max-width:1080px;"
+    >
+      {token}
+    </div>
+  </div>
 </div>
