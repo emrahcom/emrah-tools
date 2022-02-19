@@ -103,7 +103,7 @@
   </div>
 
   <div class="row justify-content-center">
-    <div class="col text-center">
+    <div class="col text-center mt-3">
       <button class="btn btn-secondary">Update</button>
     </div>
   </div>
