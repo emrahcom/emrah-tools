@@ -3,7 +3,7 @@
 
   export let title: string;
   export let name: string;
-  export let value: string;
+  export let value: undefined | number | string;
   export let options: Option[];
 </script>
 

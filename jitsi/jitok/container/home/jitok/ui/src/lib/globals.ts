@@ -20,51 +20,51 @@ export const affiOptions = [
   },
   {
     optName: "don't set",
-    optValue: "",
+    optValue: undefined,
   },
 ];
 
 export const recOptions = [
   {
     optName: "enabled",
-    optValue: "1",
+    optValue: 1,
   },
   {
     optName: "disabled",
-    optValue: "0",
+    optValue: 0,
   },
   {
     optName: "don't set",
-    optValue: "",
+    optValue: undefined,
   },
 ];
 
 export const liveOptions = [
   {
     optName: "enabled",
-    optValue: "1",
+    optValue: 1,
   },
   {
     optName: "disabled",
-    optValue: "0",
+    optValue: 0,
   },
   {
     optName: "don't set",
-    optValue: "",
+    optValue: undefined,
   },
 ];
 
 export const screenOptions = [
   {
     optName: "enabled",
-    optValue: "1",
+    optValue: 1,
   },
   {
     optName: "disabled",
-    optValue: "0",
+    optValue: 0,
   },
   {
     optName: "don't set",
-    optValue: "",
+    optValue: undefined,
   },
 ];

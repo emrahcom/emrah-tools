@@ -153,27 +153,27 @@ async function createToken(inp: Dict): Promise<Token> {
   if (inp.room) pl.room = String(inp.room);
   if (inp.exp) pl.exp = getNumericDate(Number(inp.exp));
   // payload.context.user
-  if (inp.name) user["name"] = String(inp.name);
-  if (inp.email) user["email"] = String(inp.email);
-  if (inp.affi) user["affiliation"] = String(inp.affi);
-  if (inp.avatar) user["avatar"] = String(inp.avatar);
+  if (inp.cntx_user_name) user["name"] = String(inp.cntx_user_name);
+  if (inp.cntx_user_email) user["email"] = String(inp.cntx_user_email);
+  if (inp.cntx_user_affi) user["affiliation"] = String(inp.cntx_user_affi);
+  if (inp.cntx_user_avatar) user["avatar"] = String(inp.cntx_user_avatar);
   // payload.context.features
-  if (inp.rec !== undefined) {
-    if (inp.rec === 1 || inp.rec === true) {
+  if (inp.cntx_feat_rec !== undefined) {
+    if (inp.cntx_feat_rec === 1 || inp.cntx_feat_rec === true) {
       feat["recording"] = true;
     } else {
       feat["recording"] = false;
     }
   }
-  if (inp.live !== undefined) {
-    if (inp.live === 1 || inp.live === true) {
+  if (inp.cntx_feat_live !== undefined) {
+    if (inp.cntx_feat_live === 1 || inp.cntx_feat_live === true) {
       feat["livestreaming"] = true;
     } else {
       feat["livestreaming"] = false;
     }
   }
-  if (inp.screen !== undefined) {
-    if (inp.screen === 1 || inp.screen === true) {
+  if (inp.cntx_feat_screen !== undefined) {
+    if (inp.cntx_feat_screen === 1 || inp.cntx_feat_screen === true) {
       feat["screen-sharing"] = true;
     } else {
       feat["screen-sharing"] = false;

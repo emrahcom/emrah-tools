@@ -1,6 +1,6 @@
 export interface Option {
   optName: string;
-  optValue: string;
+  optValue: undefined | number | string;
 }
 
 export interface Payload {
@@ -11,17 +11,11 @@ export interface Payload {
   sub: string;
   room: string;
   exp: number;
-  cntx: {
-    user: {
-      name: string;
-      email: string;
-      avatar: string;
-      affi: "" | "owner" | "member";
-    };
-    feat: {
-      rec: "" | "0" | "1";
-      live: "" | "0" | "1";
-      screen: "" | "0" | "1";
-    };
-  };
+  cntx_user_name: string;
+  cntx_user_email: string;
+  cntx_user_avatar: string;
+  cntx_user_affi: undefined | "owner" | "member";
+  cntx_feat_rec: undefined | 0 | 1;
+  cntx_feat_live: undefined | 0 | 1;
+  cntx_feat_screen: undefined | 0 | 1;
 }

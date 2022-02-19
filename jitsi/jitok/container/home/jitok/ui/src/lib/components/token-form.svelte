@@ -23,19 +23,13 @@
     sub: "*",
     room: "*",
     exp: 3600,
-    cntx: {
-      user: {
-        name: "",
-        email: "",
-        avatar: "",
-        affi: "",
-      },
-      feat: {
-        rec: "",
-        live: "",
-        screen: "",
-      },
-    },
+    cntx_user_name: "",
+    cntx_user_email: "",
+    cntx_user_avatar: "",
+    cntx_user_affi: undefined,
+    cntx_feat_rec: undefined,
+    cntx_feat_live: undefined,
+    cntx_feat_screen: undefined,
   };
 
   async function setToken() {
@@ -68,22 +62,22 @@
         <FieldText
           name="username"
           required={false}
-          bind:value={payload.cntx.user.name}
+          bind:value={payload.cntx_user_name}
         />
         <FieldText
           name="email"
           required={false}
-          bind:value={payload.cntx.user.email}
+          bind:value={payload.cntx_user_email}
         />
         <FieldText
           name="avatar link"
           required={false}
-          bind:value={payload.cntx.user.avatar}
+          bind:value={payload.cntx_user_avatar}
         />
         <FieldRadio
           title="affiliation"
           name="affi"
-          bind:value={payload.cntx.user.affi}
+          bind:value={payload.cntx_user_affi}
           options={affiOptions}
         />
       </div>
@@ -94,19 +88,19 @@
         <FieldRadio
           title="recording"
           name="rec"
-          bind:value={payload.cntx.feat.rec}
+          bind:value={payload.cntx_feat_rec}
           options={recOptions}
         />
         <FieldRadio
           title="streaming"
           name="live"
-          bind:value={payload.cntx.feat.live}
+          bind:value={payload.cntx_feat_live}
           options={liveOptions}
         />
         <FieldRadio
           title="screen-sharing"
           name="screen"
-          bind:value={payload.cntx.feat.screen}
+          bind:value={payload.cntx_feat_screen}
           options={screenOptions}
         />
       </div>
