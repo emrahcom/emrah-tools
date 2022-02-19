@@ -49,7 +49,10 @@ systemctl restart jitok.service
 ##### UI
 
 ```bash
-cp -arp container/home/jitok/ui /home/jitok/
+cd /home/jitok/ui
+npm install
+npm run build
+cp -arp container/home/jitok/ui/build /home/jitok/
 ```
 
 #### Nginx
