@@ -15,6 +15,7 @@
   } from "$lib/globals";
 
   let token = "no token yet";
+  let tokenColor = "text-muted";
   let payload: Payload = {
     alg: "HS512",
     secret: "myappsecret",
@@ -33,9 +34,18 @@
   };
 
   async function setToken() {
+    token = "no token yet";
+    tokenColor = "text-muted";
     payload.exp = Number(payload.exp) || 3600;
 
     const _token = await getToken(payload);
+
+    if (_token === "error") {
+      tokenColor = "text-danger";
+    } else {
+      tokenColor = "text-success";
+    }
+
     token = _token;
   }
 </script>
@@ -115,7 +125,7 @@
 
   <div class="row justify-content-center">
     <div
-      class="col text-center text-muted text-break mx-3 mt-3"
+      class="col text-center {tokenColor} text-break mx-3 mt-3"
       style="max-width:1080px;"
     >
       {token}
