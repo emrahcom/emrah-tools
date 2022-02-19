@@ -8,20 +8,24 @@
 </script>
 
 <!-- -------------------------------------------------------------------------->
-<h6 class="text-muted mt-3">{title}</h6>
+<h6 class="text-muted mt-4">{title}</h6>
 
-{#each options as { optName, optValue }}
-  <div class="form-check text-start">
-    <input
-      class="form-check-input"
-      type="radio"
-      {name}
-      id={optName}
-      bind:group={value}
-      value={optValue}
-    />
-    <label class="form-check-label" for={optName}>
-      {optName}
-    </label>
+<div class="row row-cols-auto justify-content-center">
+  <div class="col">
+    {#each options as { optName, optValue }}
+      <div class="form-check text-start">
+        <input
+          class="form-check-input"
+          type="radio"
+          {name}
+          id={optName}
+          bind:group={value}
+          value={optValue}
+        />
+        <label class="form-check-label" for={optName}>
+          {optName}
+        </label>
+      </div>
+    {/each}
   </div>
-{/each}
+</div>

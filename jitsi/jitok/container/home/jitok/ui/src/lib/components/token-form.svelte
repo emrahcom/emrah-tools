@@ -27,7 +27,7 @@
       optValue: "member",
     },
     {
-      optName: "dont set",
+      optName: "don't set",
       optValue: "",
     },
   ];
