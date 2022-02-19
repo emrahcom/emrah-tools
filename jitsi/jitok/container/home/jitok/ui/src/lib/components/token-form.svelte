@@ -5,6 +5,7 @@
   import FieldNumber from "$lib/components/field-number.svelte";
   import FieldSelect from "$lib/components/field-select.svelte";
   import FieldRadio from "$lib/components/field-radio.svelte";
+  import { getToken } from "$lib/functions";
   import {
     algOptions,
     affiOptions,
@@ -13,6 +14,7 @@
     screenOptions,
   } from "$lib/globals";
 
+  let token = "no token yet";
   let payload: Payload = {
     alg: "HS512",
     secret: "myappsecret",
@@ -36,14 +38,15 @@
     },
   };
 
-  function getToken() {
-    console.log(1);
+  function setToken() {
+    const _token = getToken(payload);
+    token = _token;
   }
 </script>
 
 <!-- -------------------------------------------------------------------------->
 <div class="container-fluid">
-  <form action="#">
+  <form on:submit|preventDefault={setToken}>
     <div class="row justify-content-center">
       <div class="col-lg text-center" style="max-width:540px;">
         <h5 class="text-muted mt-3">System</h5>
@@ -109,10 +112,12 @@
 
     <div class="row justify-content-center">
       <div class="col text-center mt-3">
-        <button class="btn btn-secondary" on:click={getToken}
-          >Update Token</button
-        >
+        <button class="btn btn-secondary" type="submit">Update Token</button>
       </div>
     </div>
   </form>
+
+  <section id="token" class="row mt-3">
+    <span class="text-muted text-center">{token}</span>
+  </section>
 </div>
