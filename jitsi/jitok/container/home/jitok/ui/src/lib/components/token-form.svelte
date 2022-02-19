@@ -108,11 +108,3 @@
     </div>
   </div>
 </div>
-
-<br />
-<p>Alg: {payload.alg}</p>
-<p>Secret: {payload.secret}</p>
-<p>Affi: {payload.cntx.user.affi}</p>
-<p>Rec: {payload.cntx.feat.rec}</p>
-<p>Live: {payload.cntx.feat.live}</p>
-<p>Screen: {payload.cntx.feat.screen}</p>
