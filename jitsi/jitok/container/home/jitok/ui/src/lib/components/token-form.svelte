@@ -5,32 +5,13 @@
   import FieldNumber from "$lib/components/field-number.svelte";
   import FieldSelect from "$lib/components/field-select.svelte";
   import FieldRadio from "$lib/components/field-radio.svelte";
-
-  const algOptions = [
-    {
-      optName: "HS512",
-      optValue: "HS512",
-    },
-    {
-      optName: "HS256",
-      optValue: "HS256",
-    },
-  ];
-
-  const affiOptions = [
-    {
-      optName: "owner",
-      optValue: "owner",
-    },
-    {
-      optName: "member",
-      optValue: "member",
-    },
-    {
-      optName: "don't set",
-      optValue: "",
-    },
-  ];
+  import {
+    algOptions,
+    affiOptions,
+    recOptions,
+    liveOptions,
+    screenOptions,
+  } from "$lib/globals";
 
   let payload: Payload = {
     alg: "HS512",
@@ -99,6 +80,25 @@
 
     <div class="col-lg text-center" style="max-width:540px;">
       <h5 class="text-muted mt-3">Features</h5>
+
+      <FieldRadio
+        title="recording"
+        name="rec"
+        bind:value={payload.cntx.feat.rec}
+        options={recOptions}
+      />
+      <FieldRadio
+        title="streaming"
+        name="live"
+        bind:value={payload.cntx.feat.live}
+        options={liveOptions}
+      />
+      <FieldRadio
+        title="screen-sharing"
+        name="screen"
+        bind:value={payload.cntx.feat.screen}
+        options={screenOptions}
+      />
     </div>
   </div>
 
@@ -113,3 +113,6 @@
 <p>Alg: {payload.alg}</p>
 <p>Secret: {payload.secret}</p>
 <p>Affi: {payload.cntx.user.affi}</p>
+<p>Rec: {payload.cntx.feat.rec}</p>
+<p>Live: {payload.cntx.feat.live}</p>
+<p>Screen: {payload.cntx.feat.screen}</p>
