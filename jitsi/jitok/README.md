@@ -33,6 +33,8 @@ deno --version
 `NPM` is only needed for development environment.
 
 ```bash
+apt-get install gnupg
+
 cat >/etc/apt/sources.list.d/nodesource.list <<EOF
 deb [signed-by=/usr/share/keyrings/nodesource.gpg] \
   https://deb.nodesource.com/node_16.x bullseye main
