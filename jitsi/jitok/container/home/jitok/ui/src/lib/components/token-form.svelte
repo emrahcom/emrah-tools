@@ -125,7 +125,7 @@
 
   <div class="row justify-content-center">
     <div
-      class="col text-center {tokenColor} text-break mx-3 mt-3"
+      class="col text-center {tokenColor} text-break mx-3 my-4"
       style="max-width:1080px;"
     >
       {token}
