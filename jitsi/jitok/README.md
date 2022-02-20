@@ -28,6 +28,27 @@ cp /tmp/deno /usr/local/bin/
 deno --version
 ```
 
+#### NPM
+
+`NPM` is only needed for development environment.
+
+```bash
+cat >/etc/apt/sources.list.d/nodesource.list <<EOF
+deb [signed-by=/usr/share/keyrings/nodesource.gpg] \
+  https://deb.nodesource.com/node_16.x bullseye main
+EOF
+
+wget -qO /tmp/nodesource.gpg.key \
+    https://deb.nodesource.com/gpgkey/nodesource.gpg.key
+cat /tmp/nodesource.gpg.key | gpg --dearmor >/usr/share/keyrings/nodesource.gpg
+
+apt-get update
+apt-get install nodejs
+
+node --version
+npm --version
+```
+
 #### Application
 
 ```bash
