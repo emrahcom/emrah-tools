@@ -17,6 +17,24 @@
 - `cntx_feat_live`: undefined | 0 | 1
 - `cntx_feat_screen`: undefined | 0 | 1
 
+#### curl example
+
+```bash
+JSON=$(cat <<EOF
+{
+  "alg":"HS512",
+  "secret":"myappsecret",
+  "aud":"myappid",
+  "room":"*",
+  "exp":3600,
+  "cntx_user_name":"myname"
+}
+EOF
+)
+
+curl -H "Content-Type: application/json" -d "$JSON" https://jitok.emrah.com/api
+```
+
 ## Container
 
 #### Packages
