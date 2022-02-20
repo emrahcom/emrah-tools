@@ -68,7 +68,7 @@ deno --version
 `NPM` is only needed for development environment.
 
 ```bash
-apt-get install gnupg
+apt-get install gnupg git
 
 cat >/etc/apt/sources.list.d/nodesource.list <<EOF
 deb [signed-by=/usr/share/keyrings/nodesource.gpg] \
@@ -107,10 +107,15 @@ systemctl restart jitok.service
 ##### UI
 
 ```bash
+git clone https://github.com/emrahcom/emrah-tools.git
+ln -s emrah-tools/jitsi/jitok/container/home/jitok/ui/ ui
+
 cd /home/jitok/ui
 npm install
 npm run build
-cp -arp container/home/jitok/ui/build /home/jitok/
+
+rm -rf /home/jitok/build
+mv build /home/jitok/
 ```
 
 #### Nginx
