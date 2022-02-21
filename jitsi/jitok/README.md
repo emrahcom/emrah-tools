@@ -7,16 +7,23 @@
 ## API Payload
 
 - `alg`: "HS256" | "HS512"\
-  _Default_: `HS512`
-- `secret`: string
-- `aud`: string
-- `iss`: string
-- `sub`: string
-- `room`: string
-- `exp`: number
+  _default_: `HS512`
+- `secret`: string\
+  _required_
+- `aud`: string\
+  _required_
+- `iss`: string\
+  _default_: _the_ `aud` _value_
+- `sub`: string\
+  _default_: `*`
+- `room`: string\
+  _default_: `*`
+- `exp`: number\
+  _default_: `3600` _sec_
 - `cntx_user_name`: string
 - `cntx_user_email`: string
-- `cntx_user_avatar`: string
+- `cntx_user_avatar`: string\
+  _e.g. https://mydomain.com/images/myavatar.png_
 - `cntx_user_affi`: "owner" | "member"
 - `cntx_feat_rec`: 0 | 1
 - `cntx_feat_live`: 0 | 1
