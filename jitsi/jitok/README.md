@@ -108,6 +108,7 @@ adduser jitok --disabled-password --gecos ""
 
 ```bash
 cp -arp container/home/jitok/api /home/jitok/
+chown jitok:jitok /home/jitok/api -R
 chmod 755 /home/jitok/api/jitok.sh
 
 cp container/etc/systemd/system/jitok.service /etc/systemd/system/
@@ -119,6 +120,7 @@ systemctl restart jitok.service
 ##### UI
 
 ```bash
+su -l jitok
 git clone https://github.com/emrahcom/emrah-tools.git
 ln -s emrah-tools/jitsi/jitok/container/home/jitok/ui/ ui
 
@@ -128,6 +130,7 @@ npm run build
 
 rm -rf /home/jitok/build
 mv build /home/jitok/
+exit
 ```
 
 #### Nginx
