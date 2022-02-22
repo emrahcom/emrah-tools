@@ -117,18 +117,18 @@
     </div>
 
     <div class="row justify-content-center">
-      <div class="col text-center mt-3">
+      <div
+        class="col text-center {tokenColor} text-break mx-3 my-3"
+        style="max-width:1080px;"
+      >
+        {token}
+      </div>
+    </div>
+
+    <div class="row justify-content-center">
+      <div class="col text-center mb-3">
         <button class="btn btn-secondary" type="submit">Update Token</button>
       </div>
     </div>
   </form>
-
-  <div class="row justify-content-center">
-    <div
-      class="col text-center {tokenColor} text-break mx-3 my-4"
-      style="max-width:1080px;"
-    >
-      {token}
-    </div>
-  </div>
 </div>
