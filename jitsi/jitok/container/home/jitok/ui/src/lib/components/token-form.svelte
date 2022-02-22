@@ -14,6 +14,8 @@
     screenOptions,
   } from "$lib/globals";
 
+  let host = "https://jitsi.mydomain.com/myroom";
+  let hasToken = false;
   let token = "no token yet";
   let tokenColor = "text-muted";
   let payload: Payload = {
@@ -34,6 +36,7 @@
   };
 
   async function setToken() {
+    hasToken = false;
     token = "no token yet";
     tokenColor = "text-muted";
     payload.exp = Number(payload.exp) || 3600;
@@ -43,10 +46,17 @@
     if (_token === "error") {
       tokenColor = "text-danger";
     } else {
+      hasToken = true;
       tokenColor = "text-success";
     }
 
     token = _token;
+  }
+
+  function connectToMeeting() {
+    if (host && hasToken) {
+      window.open(`${host}?jwt=${token}`, "_blank");
+    }
   }
 </script>
 
@@ -131,4 +141,17 @@
       </div>
     </div>
   </form>
+
+  <div class="row justify-content-center">
+    <div class="col input-group my-3"  style="max-width:540px;">
+      <input type="text" class="form-control" id="host" bind:value={host} />
+      <button
+        class="btn btn-secondary input-group-text"
+        on:click={connectToMeeting}
+        disabled={!(hasToken && host)}
+      >
+        Go with token
+      </button>
+    </div>
+  </div>
 </div>
