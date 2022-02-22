@@ -142,6 +142,8 @@
     </div>
   </form>
 
+  <hr />
+
   <div class="row justify-content-center">
     <div class="col input-group my-3"  style="max-width:540px;">
       <input type="text" class="form-control" id="host" bind:value={host} />
