@@ -80,7 +80,11 @@ if [[ "$(whoami)" != "root" ]]; then
 Aborted! Your are not the root user: $(whoami)
 Recommendation: Use the following command to be the 'root' user
 
+    # for Debian
     su -l
+
+    # for Ubuntu
+    sudo su -l
 EOF
     exit 1
 fi
@@ -366,10 +370,9 @@ hocon -f /etc/jitsi/videobridge/jvb.conf \
     set videobridge.ice.udp.port 10000
 
 # NAT harvester
-[[ "$EXTERNAL_IP" = "$PUBLIC_IP" ]] && COMMENT="#"
 cat >>/etc/jitsi/videobridge/sip-communicator.properties <<EOF
-${COMMENT}org.ice4j.ice.harvest.NAT_HARVESTER_LOCAL_ADDRESS=$PUBLIC_IP
-${COMMENT}org.ice4j.ice.harvest.NAT_HARVESTER_PUBLIC_ADDRESS=$EXTERNAL_IP
+#org.ice4j.ice.harvest.NAT_HARVESTER_LOCAL_ADDRESS=$PUBLIC_IP
+#org.ice4j.ice.harvest.NAT_HARVESTER_PUBLIC_ADDRESS=$EXTERNAL_IP
 EOF
 
 systemctl restart jitsi-videobridge2.service
