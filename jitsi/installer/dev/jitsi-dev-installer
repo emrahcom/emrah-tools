@@ -379,6 +379,42 @@ systemctl restart jitsi-videobridge2.service
 
 
 # -----------------------------------------------------------------------------
+# dev packages
+# -----------------------------------------------------------------------------
+wget -qO /tmp/nodesource.gpg.key \
+    https://deb.nodesource.com/gpgkey/nodesource.gpg.key
+cat /tmp/nodesource.gpg.key | gpg --dearmor \
+    >/usr/share/keyrings/nodesource.gpg
+echo "deb [signed-by=/usr/share/keyrings/nodesource.gpg] \
+    https://deb.nodesource.com/node_16.x bullseye main" \
+    >/etc/apt/sources.list.d/nodesource.list
+
+apt-get update
+apt-get $APT_PROXY_OPTION -y install nodejs
+apt-get $APT_PROXY_OPTION -y install gnupg git build-essential
+
+npm install npm -g
+
+
+# -----------------------------------------------------------------------------
+# dev repo
+# -----------------------------------------------------------------------------
+su -l dev <<EOSS
+cd
+git clone https://github.com/jitsi/lib-jitsi-meet.git
+
+cd lib-jitsi-meet
+npm install
+npm run build
+EOSS
+
+
+# -----------------------------------------------------------------------------
+# dev user
+# -----------------------------------------------------------------------------
+adduser dev --system --group --disabled-password --shell /bin/zsh --gecos ''
+
+# -----------------------------------------------------------------------------
 # completed
 # -----------------------------------------------------------------------------
 END_TIME=$(date +%s)
