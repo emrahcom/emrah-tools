@@ -390,15 +390,22 @@ echo "deb [signed-by=/usr/share/keyrings/nodesource.gpg] \
     >/etc/apt/sources.list.d/nodesource.list
 
 apt-get update
-apt-get $APT_PROXY_OPTION -y install nodejs
 apt-get $APT_PROXY_OPTION -y install gnupg git build-essential
+apt-get $APT_PROXY_OPTION -y install nodejs
 
 npm install npm -g
 
 
 # -----------------------------------------------------------------------------
+# dev user
+# -----------------------------------------------------------------------------
+adduser dev --system --group --disabled-password --shell /bin/zsh --gecos ''
+
+
+# -----------------------------------------------------------------------------
 # dev repo
 # -----------------------------------------------------------------------------
+# lib-jitsi-meet
 su -l dev <<EOSS
 cd
 git clone https://github.com/jitsi/lib-jitsi-meet.git
@@ -408,11 +415,16 @@ npm install
 npm run build
 EOSS
 
+# jitsi-meet
+su -l dev <<EOSS
+cd
+git clone https://github.com/jitsi/jitsi-meet.git
 
-# -----------------------------------------------------------------------------
-# dev user
-# -----------------------------------------------------------------------------
-adduser dev --system --group --disabled-password --shell /bin/zsh --gecos ''
+cd jitsi-meet
+npm install ../lib-jitsi-meet
+npm install
+make
+EOSS
 
 # -----------------------------------------------------------------------------
 # completed
