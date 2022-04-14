@@ -396,7 +396,7 @@ npm install npm -g
 # -----------------------------------------------------------------------------
 # dev user
 # -----------------------------------------------------------------------------
-adduser dev --system --group --disabled-password --shell /bin/zsh --gecos ''
+adduser dev --system --group --disabled-password --shell /bin/bash --gecos ''
 
 
 # -----------------------------------------------------------------------------
