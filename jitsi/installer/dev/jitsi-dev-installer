@@ -339,9 +339,6 @@ mkdir -p /etc/systemd/system/nginx.service.d
 wget -O /etc/systemd/system/nginx.service.d/override.conf \
     $JITSI_TMPL//etc/systemd/system/nginx.service.d/override.conf
 
-mv /etc/nginx/sites-available/$JITSI_HOST.conf \
-    /etc/nginx/sites-available/$JITSI_HOST.conf.old
-
 rm /etc/nginx/sites-enabled/default
 rm -rf /var/www/html
 ln -s /usr/share/jitsi-meet /var/www/html
@@ -425,6 +422,21 @@ npm install ../lib-jitsi-meet
 npm install
 make
 EOSS
+
+
+# -----------------------------------------------------------------------------
+# nginx for dev
+# -----------------------------------------------------------------------------
+cp /etc/nginx/sites-available/$JITSI_HOST.conf \
+    /etc/nginx/sites-available/$JITSI_HOST-dev.conf
+sed -i "s~/usr/share/jitsi-meet~/home/dev/jitsi-meet~g" \
+    /etc/nginx/sites-available/$JITSI_HOST-dev.conf
+rm -f /etc/nginx/sites-enabled/$JITSI_HOST.conf
+rm -f /etc/nginx/sites-enabled/$JITSI_HOST-dev.conf
+
+ln -s ../sites-available/$JITSI_HOST-dev.conf /etc/nginx/sites-enabled/
+
+systemctl restart nginx
 
 # -----------------------------------------------------------------------------
 # completed
