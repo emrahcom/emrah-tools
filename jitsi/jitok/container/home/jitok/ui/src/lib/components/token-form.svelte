@@ -19,7 +19,7 @@
   let token = "no token yet";
   let tokenColor = "text-muted";
   let payload: Payload = {
-    alg: "HS512",
+    alg: "HS256",
     secret: "myappsecret",
     aud: "myappid",
     iss: "",
