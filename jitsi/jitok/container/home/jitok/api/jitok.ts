@@ -125,12 +125,12 @@ async function getCryptoKey(secret: string, hash: string): Promise<CryptoKey> {
 
 // ----------------------------------------------------------------------------
 async function createToken(inp: Dict): Promise<Token> {
-  let alg: Algorithm = "HS512";
-  let hash = "SHA-512";
+  let alg: Algorithm = "HS256";
+  let hash = "SHA-256";
 
-  if (inp.alg && inp.alg === "HS256") {
-    alg = "HS256";
-    hash = "SHA-256";
+  if (inp.alg && inp.alg === "HS512") {
+    alg = "HS512";
+    hash = "SHA-512";
   }
 
   const cryptoKey = await getCryptoKey(String(inp.secret), hash);

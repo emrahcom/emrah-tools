@@ -7,7 +7,7 @@
 ## API Payload
 
 - `alg`: "HS256" | "HS512"\
-  _default_: `HS512`
+  _default_: `HS256`
 - `secret`: string\
   _required_
 - `aud`: string\
@@ -34,7 +34,7 @@
 ```bash
 JSON=$(cat <<EOF
 {
-  "alg":"HS512",
+  "alg":"HS256",
   "secret":"myappsecret",
   "aud":"myappid",
   "room":"*",
