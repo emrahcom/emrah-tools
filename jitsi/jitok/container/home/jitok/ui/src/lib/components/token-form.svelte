@@ -25,6 +25,7 @@
     iss: "",
     sub: "*",
     room: "*",
+    nbf: 0,
     exp: 3600,
     cntx_user_name: "",
     cntx_user_email: "",
@@ -39,6 +40,7 @@
     hasToken = false;
     token = "no token yet";
     tokenColor = "text-muted";
+    payload.nbf = Number(payload.nbf) || 0;
     payload.exp = Number(payload.exp) || 3600;
 
     const _token = await getToken(payload);
@@ -73,6 +75,7 @@
         <FieldText name="iss" required={false} bind:value={payload.iss} />
         <FieldText name="sub" required={false} bind:value={payload.sub} />
         <FieldText name="room" required={false} bind:value={payload.room} />
+        <FieldNumber name="nbf" required={false} bind:value={payload.nbf} />
         <FieldNumber name="exp" required={false} bind:value={payload.exp} />
       </div>
 
