@@ -18,6 +18,8 @@
   _default_: `*`
 - `room`: string\
   _default_: `*`
+- `nbf`: number\
+  _default_: `0` _sec_
 - `exp`: number\
   _default_: `3600` _sec_
 - `cntx_user_name`: string
@@ -38,6 +40,7 @@ JSON=$(cat <<EOF
   "secret":"myappsecret",
   "aud":"myappid",
   "room":"*",
+  "nbf":0,
   "exp":3600,
   "cntx_user_name":"myname"
 }
