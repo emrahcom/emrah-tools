@@ -75,8 +75,8 @@
         <FieldText name="iss" required={false} bind:value={payload.iss} />
         <FieldText name="sub" required={false} bind:value={payload.sub} />
         <FieldText name="room" required={false} bind:value={payload.room} />
-        <FieldNumber name="nbf" required={false} bind:value={payload.nbf} />
-        <FieldNumber name="exp" required={false} bind:value={payload.exp} />
+        <FieldNumber name="nbf (sec)" required={false} bind:value={payload.nbf} />
+        <FieldNumber name="exp (sec)" required={false} bind:value={payload.exp} />
       </div>
 
       <div class="col-lg text-center" style="max-width:540px;">
