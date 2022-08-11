@@ -30,6 +30,7 @@
 - `cntx_feat_rec`: 0 | 1
 - `cntx_feat_live`: 0 | 1
 - `cntx_feat_screen`: 0 | 1
+- `cntx_feat_lobby_bypass`: 0 | 1
 
 #### curl example
 
