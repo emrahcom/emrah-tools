@@ -185,6 +185,15 @@ async function createToken(inp: Dict): Promise<Token> {
       feat["screen-sharing"] = false;
     }
   }
+  if (inp.cntx_feat_lobby_bypass !== undefined) {
+    if (
+      inp.cntx_feat_lobby_bypass === 1 || inp.cntx_feat_lobby_bypass === true
+    ) {
+      feat["lobby_bypass"] = true;
+    } else {
+      feat["lobby_bypass"] = false;
+    }
+  }
   // payload.context
   if (Object.keys(user).length) cntx["user"] = user;
   if (Object.keys(feat).length) cntx["features"] = feat;
