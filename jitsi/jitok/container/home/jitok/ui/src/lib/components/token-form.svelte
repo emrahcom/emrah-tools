@@ -12,6 +12,7 @@
     recOptions,
     liveOptions,
     screenOptions,
+    lobbyOptions,
   } from "$lib/globals";
 
   let host = "https://jitsi.mydomain.com/myroom";
@@ -34,6 +35,7 @@
     cntx_feat_rec: undefined,
     cntx_feat_live: undefined,
     cntx_feat_screen: undefined,
+    cntx_feat_lobby_bypass: undefined,
   };
 
   async function setToken() {
@@ -125,6 +127,12 @@
           name="screen"
           bind:value={payload.cntx_feat_screen}
           options={screenOptions}
+        />
+        <FieldRadio
+          title="lobby-bypass"
+          name="lobby_bypass"
+          bind:value={payload.cntx_feat_lobby_bypass}
+          options={lobbyOptions}
         />
       </div>
     </div>

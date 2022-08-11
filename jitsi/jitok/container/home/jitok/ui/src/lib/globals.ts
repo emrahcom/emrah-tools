@@ -68,3 +68,18 @@ export const screenOptions = [
     optValue: undefined,
   },
 ];
+
+export const lobbyOptions = [
+  {
+    optName: "enabled",
+    optValue: 1,
+  },
+  {
+    optName: "disabled",
+    optValue: 0,
+  },
+  {
+    optName: "don't set",
+    optValue: undefined,
+  },
+];
