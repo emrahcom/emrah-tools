@@ -1,7 +1,13 @@
-#### running
+#### running (prod)
 
 ```bash
-deno run --allow-net --allow-env --watch index.ts
+deno run --allow-net index.ts
+```
+
+#### running (dev)
+
+```bash
+deno run --allow-net --watch index.ts
 ```
 
 #### checking
