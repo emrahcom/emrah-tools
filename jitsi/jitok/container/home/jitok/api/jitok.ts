@@ -159,6 +159,7 @@ async function createToken(inp: Dict): Promise<Token> {
   if (inp.nbf) pl.nbf = getNumericDate(Number(inp.nbf));
   if (inp.exp) pl.exp = getNumericDate(Number(inp.exp));
   // payload.context.user
+  if (inp.cntx_user_id) user["id"] = String(inp.cntx_user_id);
   if (inp.cntx_user_name) user["name"] = String(inp.cntx_user_name);
   if (inp.cntx_user_email) user["email"] = String(inp.cntx_user_email);
   if (inp.cntx_user_affi) user["affiliation"] = String(inp.cntx_user_affi);
