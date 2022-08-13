@@ -22,6 +22,7 @@
   _default_: `0` _sec_
 - `exp`: number\
   _default_: `3600` _sec_
+- `cntx_user_id`: string
 - `cntx_user_name`: string
 - `cntx_user_email`: string
 - `cntx_user_avatar`: string\
@@ -43,6 +44,7 @@ JSON=$(cat <<EOF
   "room":"*",
   "nbf":0,
   "exp":3600,
+  "cntx_user_id":"1ceb7fbc-beef-42a7-9ca1-a79a042fcba8"
   "cntx_user_name":"myname"
 }
 EOF
