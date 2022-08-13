@@ -12,6 +12,7 @@ export interface Payload {
   room: string;
   nbf: number;
   exp: number;
+  cntx_user_id: string;
   cntx_user_name: string;
   cntx_user_email: string;
   cntx_user_avatar: string;

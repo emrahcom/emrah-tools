@@ -28,6 +28,7 @@
     room: "*",
     nbf: 0,
     exp: 3600,
+    cntx_user_id: "",
     cntx_user_name: "",
     cntx_user_email: "",
     cntx_user_avatar: "",
@@ -88,6 +89,11 @@
           name="username"
           required={false}
           bind:value={payload.cntx_user_name}
+        />
+        <FieldText
+          name="user id"
+          required={false}
+          bind:value={payload.cntx_user_id}
         />
         <FieldText
           name="email"
