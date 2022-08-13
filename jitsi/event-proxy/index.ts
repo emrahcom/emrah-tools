@@ -1,34 +1,41 @@
 import { serve } from "https://deno.land/std/http/server.ts";
-import { HOST, PORT } from "./config.ts";
+import { DEBUG, HOST, PORT } from "./config.ts";
 import { methodNotAllowed, notFound, ok } from "./lib/http/response.ts";
 
-async function delay(milliseconds: number, event: string): Promise {
-  await console.log(`${event} - 0`);
+function delay(milliseconds: number): Promise {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
 
-  return new Promise(() =>
-    setTimeout(() => console.log(`${event} - 1`), milliseconds)
-  );
+// -----------------------------------------------------------------------------
+async function joined(json: string): Promise {
+  try {
+    const pl = JSON.parse(json);
+
+    await delay(3000);
+    console.log(pl);
+  } catch (e) {
+    if (DEBUG) console.error(e);
+  }
 }
 
 // -----------------------------------------------------------------------------
 async function route(req: Request, path: string): Promise<Response> {
-  const _json = await req.json();
+  const pl = await req.text();
 
   if (path === "/events/room/created") {
-    delay(5000, "created");
-    return ok();
+    console.log("created");
   } else if (path === "/events/room/destroyed") {
-    delay(5000, "destroyed");
-    return ok();
+    console.log("destroyed");
   } else if (path === "/events/occupant/joined") {
-    delay(5000, "joined");
-    return ok();
+    console.log("joined");
+    joined(pl);
   } else if (path === "/events/occupant/left") {
-    delay(5000, "left");
-    return ok();
+    console.log("left");
   } else {
     return notFound();
   }
+
+  return ok();
 }
 
 // -----------------------------------------------------------------------------
