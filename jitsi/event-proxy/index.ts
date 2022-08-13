@@ -8,22 +8,8 @@ import {
   HOST,
   PORT,
 } from "./config.ts";
+import { post } from "./lib/http/action.ts";
 import { methodNotAllowed, notFound, ok } from "./lib/http/response.ts";
-
-// -----------------------------------------------------------------------------
-async function post(url: string, serializedJson: string) {
-  console.log(serializedJson);
-
-  const res = await fetch(url, {
-    headers: {
-      "Accept": "application/json",
-    },
-    method: "post",
-    body: serializedJson,
-  });
-
-  return res;
-}
 
 // -----------------------------------------------------------------------------
 async function occupantJoined(serializedJson: string): Promise {
