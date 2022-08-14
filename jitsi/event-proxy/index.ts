@@ -7,9 +7,15 @@ import {
   DEBUG,
   HOST,
   PORT,
+  TOKEN,
 } from "./config.ts";
 import { post } from "./lib/http/action.ts";
-import { methodNotAllowed, notFound, ok } from "./lib/http/response.ts";
+import {
+  methodNotAllowed,
+  notFound,
+  ok,
+  unauthorized,
+} from "./lib/http/response.ts";
 
 // -----------------------------------------------------------------------------
 async function occupantJoined(serializedJson: string): Promise {
@@ -96,15 +102,22 @@ async function route(req: Request, path: string): Promise<Response> {
 
 // -----------------------------------------------------------------------------
 async function handler(req: Request): Promise<Response> {
-  // check the request method, allow only if POST
-  if (req.method === "POST") {
-    const url = new URL(req.url);
-    const path = url.pathname;
+  // allow only POST method
+  if (req.method !== "POST") return methodNotAllowed();
 
-    return await route(req, path);
-  } else {
-    return methodNotAllowed();
+  // check bearer token if it's set in config.ts
+  if (TOKEN) {
+    const auth = req.headers.get("authorization");
+
+    if (!auth) return unauthorized();
+    if (auth.split(" ")[0] !== "Bearer") return unauthorized();
+    if (TOKEN !== auth.split(" ")[1]) return unauthorized();
   }
+
+  const url = new URL(req.url);
+  const path = url.pathname;
+
+  return await route(req, path);
 }
 
 // -----------------------------------------------------------------------------
