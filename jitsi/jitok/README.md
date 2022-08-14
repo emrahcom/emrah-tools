@@ -44,7 +44,7 @@ JSON=$(cat <<EOF
   "room":"*",
   "nbf":0,
   "exp":3600,
-  "cntx_user_id":"1ceb7fbc-beef-42a7-9ca1-a79a042fcba8"
+  "cntx_user_id":"1ceb7fbc-beef-42a7-9ca1-a79a042fcba8",
   "cntx_user_name":"myname"
 }
 EOF
