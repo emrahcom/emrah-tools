@@ -1,3 +1,5 @@
+Install [deno](https://deno.land/) first.
+
 #### running (prod)
 
 ```bash
