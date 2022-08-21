@@ -5,6 +5,7 @@ export async function getToken(p: Payload) {
   const req = new Request(API_URL, {
     method: "POST",
     body: JSON.stringify(p),
+    mode: "cors",
   });
 
   const token = await fetch(req)

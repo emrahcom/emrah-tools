@@ -38,6 +38,9 @@ class BadRequest extends Error {
 function ok(body: string): Response {
   return new Response(body, {
     status: Status.OK,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+    },
   });
 }
 
