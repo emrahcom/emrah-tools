@@ -1,0 +1,43 @@
+{
+  "rooms": [
+    {
+      "id": "1625823100-catchup-0",
+      "name": "catchup-0",
+      "created_at": 1625823100,
+      "participants": {
+        "online": [
+          {
+            "name": "",
+            "id": "",
+            "jid": "14f01c40-5195-4a4d-8efb-f58b49d1874",
+            "joined_at": 1625823996
+          }
+        ],
+        "left": [
+          {
+            "name": "",
+            "id": "",
+            "jid": "14f01c40-5195-4a4d-8efb-f58b49d1874",
+            "joined_at": 1625823996,
+            "left_at": 1625824035,
+            "duration": 39
+          }
+        ]
+      }
+    },
+    {
+      "id": "1625823101-catchup-1",
+      "name": "catchup-1",
+      "created_at": 1625823101,
+      "participants": {
+      }
+    },
+    {
+      "id": "1625823102-catchup-2",
+      "name": "catchup-2",
+      "created_at": 1625823102,
+      "participants": {
+      }
+    }
+  ]
+}
