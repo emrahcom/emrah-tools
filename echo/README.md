@@ -14,13 +14,9 @@ apt-get install unzip ncat
 #### Deno
 
 ```bash
-LATEST=$(curl -sSf https://github.com/denoland/deno/releases | \
-    grep -o "/denoland/deno/releases/download/.*/deno-.*linux.*\.zip" | \
-    head -n1)
-echo $LATEST
-
 cd /tmp
-wget -O deno.zip https://github.com/$LATEST
+wget -T 30 -O deno.zip \
+  https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip
 unzip deno.zip
 ./deno --version
 
