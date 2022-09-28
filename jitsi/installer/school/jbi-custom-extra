@@ -72,8 +72,6 @@ sed -i "/channelLastN:/ s~//\s*~~" $JITSI_MEET_CONFIG
 sed -i "/channelLastN:/ s~:.*~: 4,~" $JITSI_MEET_CONFIG
 sed -i "/disableProfile:/ s~//\s*~~" $JITSI_MEET_CONFIG
 sed -i "/disableProfile:/ s~:.*~: true,~" $JITSI_MEET_CONFIG
-sed -i "/enableFeaturesBasedOnToken:/ s~//\s*~~" $JITSI_MEET_CONFIG
-sed -i "/enableFeaturesBasedOnToken:/ s~:.*~: true,~" $JITSI_MEET_CONFIG
 
 # meet customization is ok
 timeout 8 curl -s "$CHECKMYPORT?proto=udp&port=60000&text=ok-school-meet" \
