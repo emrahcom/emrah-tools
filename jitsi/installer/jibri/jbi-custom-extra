@@ -132,6 +132,7 @@ chmod 755 /home/jibri/.icewm/startup
 # jibri
 usermod -aG adm,audio,video,plugdev jibri
 mkdir -p /usr/local/eb/recordings
+chown jibri:jibri /home/jibri
 chown jibri:jibri /usr/local/eb/recordings -R
 
 wget -O /etc/jitsi/jibri/jibri.conf $JIBRI_TMPL/etc/jitsi/jibri/jibri.conf
