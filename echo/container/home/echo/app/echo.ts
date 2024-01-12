@@ -2,7 +2,7 @@
 // echo.ts
 // ----------------------------------------------------------------------------
 import { serve } from "https://deno.land/std/http/server.ts";
-import { Status } from "https://deno.land/std/http/http_status.ts";
+import { STATUS_CODE } from "https://deno.land/std/http/status.ts";
 
 const HOSTNAME = "0.0.0.0";
 const PORT = 9000;
@@ -34,35 +34,35 @@ interface Echo {
 // ----------------------------------------------------------------------------
 function ok(body: string): Response {
   return new Response(body, {
-    status: Status.OK,
+    status: STATUS_CODE.OK,
   });
 }
 
 // ----------------------------------------------------------------------------
 function badRequest(): Response {
   return new Response("BadRequest", {
-    status: Status.BadRequest,
+    status: STATUS_CODE.BadRequest,
   });
 }
 
 // ----------------------------------------------------------------------------
 function forbidden(): Response {
   return new Response("Forbidden", {
-    status: Status.Forbidden,
+    status: STATUS_CODE.Forbidden,
   });
 }
 
 // ----------------------------------------------------------------------------
 function internalServerError(): Response {
   return new Response("InternalServerError", {
-    status: Status.InternalServerError,
+    status: STATUS_CODE.InternalServerError,
   });
 }
 
 // ----------------------------------------------------------------------------
 function notImplemented(): Response {
   return new Response("NotImplemented", {
-    status: Status.NotImplemented,
+    status: STATUS_CODE.NotImplemented,
   });
 }
 
