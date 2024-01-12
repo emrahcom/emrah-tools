@@ -123,15 +123,16 @@ async function echo(inp: Echo) {
 
   try {
     const encoder = new TextEncoder();
-    const shell = Deno.run({
-      cmd: ["bash"],
+    const command = new Deno.Command("bash", {
       stdin: "piped",
     });
+    const shell = command.spawn();
+    const writer = shell.stdin.getWriter();
 
-    await shell.stdin.write(encoder.encode(cmd));
-    await shell.stdin.close();
-    await shell.status();
-    shell.close();
+    await writer.write(encoder.encode(cmd));
+    await writer.ready;
+    await writer.close();
+    await shell.status;
   } catch {
     throw new SubProcess("runtime error");
   }
